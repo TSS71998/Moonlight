@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "cc65 (NES)",
+            "includePath": ["${workspaceFolder}/src"],
+            "defines": [
+                "__CC65__",
+                "__NES__",
+                "__fastcall__=",
+                "__cdecl__=",
+                "__near__=",
+                "__far__=",
+                "__asm__(...)="
+            ],
+            "cStandard": "c89",
+            "intelliSenseMode": "${default}"
+        }
+    ],
+    "version": 4
+}
