@@ -1,7 +1,7 @@
-# castle-game
+# Moonlight
 
 An NES game in C (cc65) on an MMC1 cartridge. This is the project setup: the
-runtime, banking and build are in place, and `main.c` is a small test screen
+runtime, banking and build are in place, and `main.c` runs a movement test room
 (a room loaded from a switchable bank, plus a sprite you move with the d-pad).
 
 ## Requirements
@@ -43,8 +43,10 @@ Mirroring is vertical, which suits horizontal scrolling.
 | `src/mmc1.s` | MMC1 register writes (`mmc1_set_prg_bank`, `mmc1_set_chr0/1`, `mmc1_set_control`) |
 | `src/pad.s` | Controller reading |
 | `src/nes.h` / `src/nes.c` | Registers, frame sync, VRAM, palette, sprite and banked-copy helpers |
-| `src/level.h` / `src/bank0.c` | Room format and level data stored in PRG bank 0 |
-| `src/main.c` | The test screen. Your game starts here. |
+| `src/level.h` / `src/level.c` | Rooms, metatiles (tiles, palette, collision), drawing, `level_solid_at` |
+| `src/bank0.c` | Level data stored in PRG bank 0 (currently the movement test room) |
+| `src/player.h` / `src/player.c` | Player movement: walking, committed jump, gravity, collision, drawing (tuning constants in `player.h`) |
+| `src/main.c` | Setup and the main loop |
 | `cfg/mmc1.cfg` | Linker layout of the banks |
 | `tools/make_chr.py` | Builds placeholder `chr/*.chr` from text art |
 | `tools/headless_shot.rs` | Runs the ROM in your emulator without a window and saves screenshots |
