@@ -92,7 +92,7 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
         if (pad & PAD_LEFT) {
             vx = -WALK_SPEED;
             player_facing = FACE_LEFT;
-        } else {
+        } else if (pad & PAD_RIGHT) {
             vx = WALK_SPEED;
             player_facing = FACE_RIGHT;
         }
@@ -109,7 +109,7 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
     if (vx) move_horizontal(vx);
 
     if (player_on_ground) {
-        if (!floor_at(HI(player_x), HI(player_x) + HB_BOTTOM + 1)) {
+        if (!floor_at(HI(player_x), HI(player_y) + HB_BOTTOM + 1)) {
             player_on_ground = 0;
             player_vy = 0;
             player_jump_vx = 0;

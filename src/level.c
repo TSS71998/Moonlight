@@ -42,7 +42,7 @@ void level_draw(void) {
     for (ty = 0; ty < ROOM_H; ++ty) {
         for (tx = 0; tx < ROOM_W; ++tx) {
             t = mt_palette[room[ty * ROOM_W + tx]];
-            attr[(ty >> 1) * 8 + (tx >> 1)] != t << (((ty & 1) << 2) | ((tx & 1) << 1));
+            attr[(ty >> 1) * 8 + (tx >> 1)] |= t << (((ty & 1) << 2) | ((tx & 1) << 1));
         }
     }
     vram_adr(0x23c0);

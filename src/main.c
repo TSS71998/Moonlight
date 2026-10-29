@@ -19,7 +19,7 @@ void main(void) {
     static u8 pad, pad_prev, pressed;
 
     ppu_off();
-    ppu_ctrl = CTRL_NMI | CTRL_SPR_1000;
+    ppu_ctrl = CTRL_NMI | CTRL_SPR_8X16;
 
     level_load(LEVEL_BANK, room_test);
     level_draw();
