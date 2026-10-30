@@ -106,6 +106,10 @@ void __fastcall__ pal_all(const u8 *pal);
 void oam_clear(void);
 void __fastcall__ oam_spr(u8 x, u8 y, u8 tile, u8 attr);
 
+#define MSPR_END 128
+void __fastcall__ oam_meta_spr(u8 x, u8 y, const u8 *data, u8 flip);
+
+
 /* Banked reads: copy len bytes from src in PRG bank `bank` into dst,
    restoring the previous bank afterwards. */
 void __fastcall__ banked_copy(u8 bank, void *dst, const void *src, u16 len);

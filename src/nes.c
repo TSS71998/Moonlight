@@ -72,6 +72,21 @@ void __fastcall__ oam_spr(u8 x, u8 y, u8 tile, u8 attr) {
     oam_idx += 4;
 }
 
+void __fastcall__ oam_meta_spr(u8 x, u8 y, const u8 *data, u8 flip) {
+    static const u8 *p;
+    static u8 dx;
+
+    p = data;
+    while (p[0] != MSPR_END) {
+        dx = p[0];
+        if (flip) {
+            dx = (u8)(-8 - (s8)dx);
+        }
+        oam_spr(x + dx, y + p[1], p[2] | 1, p[3] ^ flip);
+        p += 4;
+    }
+}
+
 void __fastcall__ banked_copy(u8 bank, void *dst, const void *src, u16 len) {
     u8 old = prg_bank;
     mmc1_set_prg_bank(bank);
