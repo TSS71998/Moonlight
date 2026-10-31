@@ -1,4 +1,3 @@
-/* level.h - rooms, metatiles and collision */
 #ifndef LEVEL_H
 #define LEVEL_H
 
@@ -7,15 +6,16 @@
 #define ROOM_W 16
 #define ROOM_H 15
 
-#define MT_EMPTY 0
-#define MT_BRICK 1
-#define MT_STONE 2
-#define MT_COUNT 3
+#define MT_PAL_MASK 0x03
+#define COLL_SOLID 0x10
 
-#define COLL_SOLID 0x01
-
-#define LEVEL_BANK 0
-extern const u8 room_test[ROOM_W * ROOM_H];
+typedef struct {
+    const u8 *mt_tiles;     /* 4 tiles per metatile: TL, TR, BL, BR */
+    const u8 *mt_info;      /* 1 info byte per metatile */
+    const u8 *room;         /* ROOM_W * ROOM_H metatile numbers */
+    const u8 *pal;          /* 16-byte background palette, or 0 */
+    u16 mt_count;
+} LevelDef;
 
 extern u8 room[ROOM_W * ROOM_H];
 

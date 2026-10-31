@@ -9,4 +9,13 @@ extern const u8 hero_walk2[];
 extern const u8 hero_walk3[];
 extern const u8 hero_crouch[];
 
+extern const u8 hero_attack1[];
+extern const u8 hero_attack2[];
+extern const u8 hero_crouch_attack1[];
+extern const u8 hero_crouch_attack2[];
+
+extern const u8 sword_raised[];
+extern const u8 sword_swing[];
+extern const u8 sword_thrust[]; 
+
 #endif

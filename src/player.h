@@ -24,10 +24,21 @@
 #define PS_CROUCH  2
 #define PS_JUMP    3
 #define PS_FALL    4
+#define PS_ATTACK  5
 
-#define WALK_ANIM_DELAY  7
+#define WALK_ANIM_DELAY  10
 
 #define JUMP_UNTUCK_VY   0x0100
+
+#define CROUCH_DROP      10
+
+#define SWORD_HB_X1      10
+#define SWORD_HB_X2      22
+#define SWORD_HB_Y1      (-19)
+#define SWORD_HB_Y2      (-13)
+
+extern u8 player_attack_hit;
+extern u8 player_hit_x1, player_hit_y1, player_hit_x2, player_hit_y2;
 
 extern u16 player_x;
 extern u16 player_y;      

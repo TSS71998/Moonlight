@@ -28,7 +28,80 @@ static void __fastcall__ set_state(u8 state) {
         anim_frame = 0;
         anim_timer = WALK_ANIM_DELAY;
     }
-} 
+}
+
+/* ---- Sword attack ------------------------------------------------------- */
+/* Castlevania rules: on the ground you stop and can't turn until the swing
+   ends; in the air you keep your jump's momentum; holding Down when you
+   press B gives a crouching attack. */
+typedef struct {
+    const u8 *body;         /* body while standing or in the air */
+    const u8 *body_crouch;  /* body while crouching */
+    const u8 *sword;        /* sword pieces */
+    u8 frames;              /* how long this phase lasts */
+    u8 sword_in_front;      /* 1 = sword drawn over the body */
+    u8 hits;                /* 1 = the sword hitbox is active */
+} AttackPhase;
+
+static const AttackPhase attack_phases[] = {
+    /* wind up: sword raised behind the head */
+    { hero_attack1, hero_crouch_attack1, sword_raised,  5, 0, 0 },
+    /* swing: sword coming forward */
+    { hero_attack2, hero_crouch_attack2, sword_swing,   3, 1, 0 },
+    /* strike: sword straight out, can hit */
+    { hero_attack2, hero_crouch_attack2, sword_thrust, 12, 1, 1 },
+};
+#define ATTACK_PHASES (sizeof(attack_phases) / sizeof(attack_phases[0]))
+
+static u8 attack_phase;
+static u8 attack_timer;
+static u8 attack_crouch;        /* this attack started crouched */
+static u8 attack_air_state;     /* PS_JUMP or PS_FALL to return to mid-air */
+
+u8 player_attack_hit;
+u8 player_hit_x1, player_hit_y1, player_hit_x2, player_hit_y2;
+
+static void __fastcall__ start_attack(u8 pad) {
+    attack_crouch = player_on_ground && (pad & PAD_DOWN);
+    attack_air_state = player_state == PS_JUMP ? PS_JUMP : PS_FALL;
+    attack_phase = 0;
+    attack_timer = attack_phases[0].frames;
+    player_state = PS_ATTACK;
+}
+
+static void __fastcall__ update_attack(u8 pad) {
+    static u8 ax, ay;
+
+    if (--attack_timer == 0) {
+        if (++attack_phase == ATTACK_PHASES) {
+            /* done: back to whatever the player is doing now */
+            player_attack_hit = 0;
+            if (!player_on_ground)   player_state = attack_air_state;
+            else if (pad & PAD_DOWN) player_state = PS_CROUCH;
+            else                     player_state = PS_STAND;
+            anim_frame = 0;
+            anim_timer = WALK_ANIM_DELAY;
+            return;
+        }
+        attack_timer = attack_phases[attack_phase].frames;
+    }
+
+    player_attack_hit = attack_phases[attack_phase].hits;
+    if (player_attack_hit) {
+        ax = HI(player_x) + 8;                  /* feet anchor */
+        ay = HI(player_y) + 32 + (attack_crouch ? CROUCH_DROP : 0);
+        if (player_facing == FACE_RIGHT) {
+            player_hit_x1 = ax + SWORD_HB_X1;
+            player_hit_x2 = ax + SWORD_HB_X2;
+        } else {
+            /* mirror around the anchor: pixel +k becomes -1-k */
+            player_hit_x1 = ax - 1 - SWORD_HB_X2;
+            player_hit_x2 = ax - 1 - SWORD_HB_X1;
+        }
+        player_hit_y1 = ay + SWORD_HB_Y1;
+        player_hit_y2 = ay + SWORD_HB_Y2;
+    }
+}
 
 void __fastcall__ player_init(u8 x, u8 y) {
     spawn_x = player_x = (u16)x << 8;
@@ -108,7 +181,15 @@ static void move_vertical(void) {
 void __fastcall__ player_update(u8 pad, u8 pressed) {
     static s16 vx;
 
-    if (player_on_ground) {
+    if ((pressed & PAD_B) && player_state != PS_ATTACK) {
+        start_attack(pad);
+    }
+
+    if (player_state == PS_ATTACK) {
+        /* committed to the swing: no walking, turning or jumping, but a
+           jump keeps its momentum until you land */
+        vx = player_on_ground ? 0 : player_jump_vx;
+    } else if (player_on_ground) {
         vx = 0;
         if (pad & PAD_LEFT) {
             vx = -WALK_SPEED;
@@ -124,6 +205,7 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
             player_vy = -JUMP_VELOCITY;
             player_jump_vx = vx > 0 ? JUMP_SPEED : vx < 0 ? -JUMP_SPEED : 0;
             player_on_ground = 0;
+            set_state(PS_JUMP);                 /* walk fix: was missing */
         }
     } else {
         vx = player_jump_vx;
@@ -141,7 +223,9 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
         move_vertical();
     }
 
-    if (player_on_ground) {
+    if (player_state == PS_ATTACK) {
+        update_attack(pad);
+    } else if (player_on_ground) {
         if (pad & PAD_DOWN) set_state(PS_CROUCH);
         else if (vx)        set_state(PS_WALK);
         else                set_state(PS_STAND);
@@ -152,13 +236,33 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
     if (player_state == PS_WALK) {
         if (--anim_timer == 0) {
             anim_timer = WALK_ANIM_DELAY;
-            if (++anim_frame == WALK_CYCLE_LEN) anim_frame == 0;
+            if (++anim_frame == WALK_CYCLE_LEN) anim_frame = 0;   /* walk fix: = not == */
         }
     }
 }
 
 void player_draw(void) {
     static const u8 *frame;
+    static const AttackPhase *ph;
+    static u8 ax, ay, flip;
+
+    ax = HI(player_x) + 8;          /* anchor = middle of the feet */
+    ay = HI(player_y) + 32;
+    flip = player_facing == FACE_LEFT ? SPR_FLIP_H : 0;
+
+    if (player_state == PS_ATTACK) {
+        ph = &attack_phases[attack_phase];
+        frame = attack_crouch ? ph->body_crouch : ph->body;
+        /* sprites added first are drawn on top */
+        if (ph->sword_in_front) {
+            oam_meta_spr(ax, ay + (attack_crouch ? CROUCH_DROP : 0), ph->sword, flip);
+            oam_meta_spr(ax, ay, frame, flip);
+        } else {
+            oam_meta_spr(ax, ay, frame, flip);
+            oam_meta_spr(ax, ay + (attack_crouch ? CROUCH_DROP : 0), ph->sword, flip);
+        }
+        return;
+    }
 
     switch (player_state) {
         case PS_WALK:
@@ -175,6 +279,5 @@ void player_draw(void) {
             break;
     }
 
-    oam_meta_spr(HI(player_x) + 8, HI(player_y) + 32, frame,
-                 player_facing == FACE_LEFT ? SPR_FLIP_H : 0);
+    oam_meta_spr(ax, ay, frame, flip);
 }

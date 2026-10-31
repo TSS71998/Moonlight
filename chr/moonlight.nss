@@ -3,12 +3,12 @@ NSTssTXT
 BtnTiles=1
 BtnChecker=0
 BtnSelTiles=0
-BtnChrBank1=1
-BtnChrBank2=0
+BtnChrBank1=0
+BtnChrBank2=1
 BtnChrBank3=0
 BtnChrBank4=0
 BtnGridAll=0
-BtnGridTile=0
+BtnGridTile=1
 BtnGridAtr=0
 BtnGridBlock=0
 BtnGridScr=0
@@ -58,10 +58,10 @@ VarBankActive_msprBuffer=0
 VarPalBank_mapBuffer=0
 VarPalBank_msprBuffer=0
 VarTileViewTagBuf=1
-VarBgPalCur=1
+VarBgPalCur=0
 VarPalActive=2
-VarTileActive=10
-VarBankActive=0
+VarTileActive=0
+VarBankActive=4096
 VarPPUMask=0
 VarPPUMaskSet0=0
 VarPPUMaskSet1=0
@@ -86,10 +86,10 @@ VarNameSelectionT=-1
 VarNameSelectionB=0
 VarNameCopyW=-1
 VarNameCopyH=-1
-VarCHRSelectionL=10
-VarCHRSelectionR=12
+VarCHRSelectionL=0
+VarCHRSelectionR=1
 VarCHRSelectionT=0
-VarCHRSelectionB=2
+VarCHRSelectionB=1
 VarCHRCopyW=2
 VarCHRCopyH=2
 VarCHRCopyRect=1
@@ -155,6 +155,8 @@ propertyCHRlabel7=global condition
 MetaSprite0=Metasprite0
 MetaSprite1=Metasprite1
 MetaSprite2=Metasprite2
+MetaSprite3=Metasprite3
+MetaSprite4=Metasprite4
 
 MetaSpriteBankName=session
 MetaspritePlayBackCursor=0
@@ -162,7 +164,7 @@ MetaspritePlayBackCursor=0
 
 FilterCHR=1
 FilterName=1
-FileNameCHR=C:\Users\Thesu\dev\c_projects\moonlight\chr\sprites
+FileNameCHR=C:\Users\Thesu\dev\c_projects\moonlight\chr\sprites.chr
 FileNameName=
 FileNamePal=
 FileNameMetaSpriteBank=
@@ -178,51 +180,51 @@ RadioAutoexport_UseSubDir_NEXXT=0
 CheckAutoexport_MetatileAsBMP=0
 
 
-VarCHRSelected=00[a]0100[f5]
+VarCHRSelected=0100[ff]
 
 
-Palette=0f0010300f0c21320f0c21110f0b1a290f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
+Palette=0f0010300f0c21320f0c21110f08180b0f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
 
 
-PalUndo=0f0010300f0c21320f0c21110f0b1a290f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
+PalUndo=0f0010300f0c21320f0c21110f08180b0f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
 
 
-CHRMain=000103[4]010400[2]01[3]00[2]031e1f3f[3]7e7dff0100[3]0103060cf0c8e4fcf4[3]fc00f0f880e8[2]680070acdeff[2]f7[3]80502060f078[2]f8fbfdf8ff7f[3]7d0c0e07000407060e7d[2]7b[2]77fcf4fa0e[2]1c143820383cefedfbfe[2]ecf4[2]fa76041030707838f4f0[2]f8e0f0[2]fc38[3]207040f8[2]000103[4]0100[3]01[3]00[2]03070f1f[2]3f[4]00[5]01[2]03f0c8e4fcf4[3]fc00f0f880e8[2]68007088fc[2]ecee7e[2]80700020f0b0[2]903f[8]03[2]0100[2]01[2]003f7f[5]ff[2]00[3]01[2]03[3]fee6eefe[2]fcdc[2]00f8f000[2]80e0[2]dcd8f8[2]b0f0d0f8e0[2]c080c000e0[2]000103[4]0100[3]01[3]00[2]0306070f1f[3]3f[2]0100[3]01[2]00[2]f0c8e4fcf4[3]fc00f0f880e8[2]68007088f8d8eefdf9fb807000a0b0c2fe7c7f[4]3f[4]0001[2]000203[2]063f7d7b[2]7f77fffb06[2]0c[2]1018203cfe[2]ee9cfc[2]f4[2]00[2]f06000b038[2]f4[2]f8e8f0d0f0e838[2]30[2]40e0c0f000[3e80]
+CHRMain=000103[4]010400[2]01[3]00[2]031e1f3f[3]7e7d7f0100[3]0103060cf0c8e4fcf4[3]fc00f0f880e8[2]680070a8d8fceceefe[2]80502060f070[2]f07b[3]777f[3]7d0c[3]080407060e7d[2]7b[2]77fcf4fa0e[2]1c143820383ceede7efefcecf4[2]f0e0800030707838f4f0[2]f8e0f0[2]fc18[2]38207040f8[2]000103[4]010400[2]01[3]00[2]031e1f3f[3]7e7dff0100[3]0103060cf0c8e4fcf4[3]fc00f0f880e8[2]680070acdeff[2]f7[3]80502060f078[2]f8fbfdf8ff7f[3]7d0c0e07000407060e7d[2]7b[2]77fcf4fa0e[2]1c143820383ce7edfbfe[2]ecf4[2]fa76041030707838f4f0[2]f8e0f0[2]fc38[3]207040f8[2]000103[4]0100[3]01[3]00[2]03070f1f[2]3f[4]00[5]01[2]03f0c8e4fcf4[3]fc00f0f880e8[2]68007088fc[2]ecee7e[2]80700020f0b0[2]903f[8]03[2]0100[2]01[2]003f7f[5]ff[2]00[3]01[2]03[3]fee6eefe[2]fcdc[2]00f8f000[2]80e0[2]dcd8f8[2]b0f0d0f8e0[2]c080c000e0[2]000103[4]0100[3]01[3]00[2]0306070f1f[3]3f[2]0100[3]01[2]00[2]f0c8e4fcf4[3]fc00f0f880e8[2]68007088f8d8eefdf9fb807000a0b0c2fe7c7f[4]3f[4]0001[2]000203[2]063f7d7b[2]7f77fffb06[2]0c[2]1018203cfe[2]ee9cfc[2]f4[2]00[2]f06000b038[2]f4[2]f8e8f0d0f0e838[2]30[2]40e0c0f000[11]0103[4]0100[3]01[3]00[2]0100[10]f0c8e4fcf4[3]fc00f0f880e8[2]6800070f1f[2]3f[4]00[5]0100023f7f[4]ff[3]030100303c2d21302edeff[3]f3f7ffd0200020c0bcf800be9e3cfcf478e0f8c0e0d03038a0383c00[d90]ff00[6]ff[8]00ff80[6]ff7f[7]00ff08[6]fff7[7]00ff00[6]ff[8]0090397f[2]fff0c0006fff[2]e0c080[2]0040aeff[2]bf0700[2]bfffc70100[2f94]
 
 
-CHRUndo=000103[4]010400[2]01[3]00[2]031e1f3f[3]7e7dff0100[3]0103060cf0c8e4fcf4[3]fc00f0f880e8[2]680070acdeff[2]f7[3]80502060f078[2]f8fbfdf8ff7f[3]7d0c0e07000407060e7d[2]7b[2]77fcf4fa0e[2]1c143820383cefedfbfe[2]ecf4[2]fa76041030707838f4f0[2]f8e0f0[2]fc38[3]207040f8[2]000103[4]0100[3]01[3]00[2]03070f1f[2]3f[4]00[5]01[2]03f0c8e4fcf4[3]fc00f0f880e8[2]68007088fc[2]ecee7e[2]80700020f0b0[2]903f[8]03[2]0100[2]01[2]003f7f[5]ff[2]00[3]01[2]03[3]fee6eefe[2]fcdc[2]00f8f000[2]80e0[2]dcd8f8[2]b0f0d0f8e0[2]c080c000e0[2]000103[4]0100[3]01[3]00[2]0306070f1f[3]3f[2]0100[3]01[2]00[2]f0c8e4fcf4[3]fc00f0f880e8[2]68007088f8d8eefdf9fb807000a0b0c2fe7c7f[4]3f[4]020301000203[2]063f7d7b[2]7f77fffb06[2]0c[2]1018203cfe[2]ee9cfc[2]f4[2]00[2]f06000b038[2]f4[2]f8e8f0d0f0e838[2]30[2]40e0c0f000[3e80]
+CHRUndo=000103[4]010400[2]01[3]00[2]031e1f3f[3]7e7d7f0100[3]0103060cf0c8e4fcf4[3]fc00f0f880e8[2]680070a8d8fceceefe[2]80502060f070[2]f07b[3]777f[3]7d0c[3]080407060e7d[2]7b[2]77fcf4fa0e[2]1c143820383ceede7efefcecf4[2]f0e0800030707838f4f0[2]f8e0f0[2]fc18[2]38207040f8[2]000103[4]010400[2]01[3]00[2]031e1f3f[3]7e7dff0100[3]0103060cf0c8e4fcf4[3]fc00f0f880e8[2]680070acdeff[2]f7[3]80502060f078[2]f8fbfdf8ff7f[3]7d0c0e07000407060e7d[2]7b[2]77fcf4fa0e[2]1c143820383ce7edfbfe[2]ecf4[2]fa76041030707838f4f0[2]f8e0f0[2]fc38[3]207040f8[2]000103[4]0100[3]01[3]00[2]03070f1f[2]3f[4]00[5]01[2]03f0c8e4fcf4[3]fc00f0f880e8[2]68007088fc[2]ecee7e[2]80700020f0b0[2]903f[8]03[2]0100[2]01[2]003f7f[5]ff[2]00[3]01[2]03[3]fee6eefe[2]fcdc[2]00f8f000[2]80e0[2]dcd8f8[2]b0f0d0f8e0[2]c080c000e0[2]000103[4]0100[3]01[3]00[2]0306070f1f[3]3f[2]0100[3]01[2]00[2]f0c8e4fcf4[3]fc00f0f880e8[2]68007088f8d8eefdf9fb807000a0b0c2fe7c7f[4]3f[4]0001[2]000203[2]063f7d7b[2]7f77fffb06[2]0c[2]1018203cfe[2]ee9cfc[2]f4[2]00[2]f06000b038[2]f4[2]f8e8f0d0f0e838[2]30[2]40e0c0f000[11]0103[4]0100[3]01[3]00[2]0100[10]f0c8e4fcf4[3]fc00f0f880e8[2]6800070f1f[2]3f[4]00[5]0100023f7f[4]ff[3]030100303c2d21302edeff[3]f3f7ffd0200020c0bcf800be9e3cfcf478e0f8c0e0d03038a0383c00[d90]ff00[6]ff[8]00ff80[6]ff7f[7]00ff08[6]fff7[7]00ff00[6]ff[8]0090397f[2]fff0c0006fff[2]e0c080[2]0040aeff[2]bf0700[2]bfffc70100[2f94]
 
 
-CHRCopy=3f[8]03[2]0100[2]01[2]00fee6eefe[2]fcdc[2]00f8f000[2]80e0[2]3f7f[5]ff[2]00[3]01[2]03[3]dcd8f8[2]b0[2]d0f8e0[2]c0[4]e0[2]00[3fc0]
+CHRCopy=7f[4]3f[4]0001[2]000203[2]06fe[2]ee9cfc[2]f4[2]00[2]f06000b038[2]3f7d7b[2]7f77fffb06[2]0c[2]1018203cf4[2]f8e8f0d0f0e838[2]30[2]40e0c0f0000103[4]0100[3]01[3]00[2]03f0c8e4fcf4[3]fc00f0f880e8[2]68003f[8]03[2]0100[2]01[2]00fee6eefe[2]fcdc[2]00f8f000[2]80e0[2]000103[4]0100[3]01[3]00[2]03f0c8e4fcf4[3]fc00f0f880e8[2]68007f[4]3f[4]0001[2]000203[2]06fe[2]ee9cfc[2]f4[2]00[2]f06000b038[2]1e1f3f[3]7e7dff0100[3]0103060c70acdeff[2]f7[3]80502060f078[2]f87d[2]7b[2]77fcf4fa0e[2]1c143820383cf4f0[2]f8e0f0[2]fc38[3]207040f8[2]070f1f[2]3f[4]00[5]01[2]037088fc[2]ecee7e[2]80700020f0b0[2]903f7f[5]ff[2]00[3]01[2]03[3]dcd8f8[2]b0f0d0f8e0[2]c080c000e0[2]06070f1f[3]3f[2]0100[3]01[2]00[2]7088f8d8eefdf9fb807000a0b0c2fe7c3f7d7b[2]7f77fffb06[2]0c[2]1018203cf4[2]f8e8f0d0f0e838[2]30[2]40e0c0f000[3e80]
 
 
-NameTable=00[3c0]
+NameTable=00[23]1600[337]1500[20]1516[2]00[41]
 
 
 NameCopy=00[3c0]
 
 
-NameUndo=00[3c0]
+NameUndo=00[23]1600[2f8]050600[1d]0506[2]00[1d]1516[2]0600[1d]1516[2]00[41]
 
 
-AttrTable=00[40]
+AttrTable=8aaa[2]00[6]0a0200[2b]c8a200[8]
 
 
 AttrCopy=00[40]
 
 
-AttrUndo=00[40]
+AttrUndo=8aaa[2]00[6]0a0200[2b]ccf300[8]
 
 
-MetaSprites=300602402002[2]402000023830040238ff[f0]200a024020080238300c0238300e0240300c0238300e0240ff[e8]20100238201202403014023830160240ff[fdf0]
+MetaSprites=300602402002[2]402000023830040238ff[f0]200a024020080238300c0238300e0240300c0238300e0240ff[e8]20100238201202403014023830160240ff[f0]201a024020180238301c0238301e0240ff[f0]20[2]0238202202403024023830260240ff[fbf0]
 
-MetaSpritesUndo=300602402002[2]402000023830040238ff[f0]200a024020080238300c0238300e0240300c0238300e0240ff[e8]20100238201202403014023830160240ff[fdf0]
-
-
-MetaSprites_show=1[4]0[3c]1[6]0[3a]1[4]0[3f7c]
+MetaSpritesUndo=300602402002[2]402000023830040238ff[f0]200a024020080238300c0238300e0240300c0238300e0240ff[e8]20100238201202403014023830160240ff[f0]201a024020180238301c0238301e0240ff[f0]20[2]0238202202403024023830260240ff[fbf0]
 
 
-MetaSpritesUndo_show=1[4]0[3c]1[6]0[3a]1[4]0[3f7c]
+MetaSprites_show=1[4]0[3c]1[6]0[3a]1[4]0[3c]1[4]0[3c]1[4]0[3efc]
+
+
+MetaSpritesUndo_show=1[4]0[3c]1[6]0[3a]1[4]0[3c]1[4]0[3c]1[4]0[3efc]
 
 
 CustomTileView=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
@@ -360,14 +362,14 @@ MetatileSet_8x8_props=00[2000]
 MetatileSet_8x8_propsUndo=00[2000]
 
 
-MetatileSetLabels_2x2=Unlabeled,Unlabeled,Unlabeled,Unlabeled
-MetatileSetLabels_2x2Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+MetatileSetLabels_2x2=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+MetatileSetLabels_2x2Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
-MetatileSetLabels_4x4=Unlabeled,Unlabeled,Unlabeled,Unlabeled
-MetatileSetLabels_4x4Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+MetatileSetLabels_4x4=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+MetatileSetLabels_4x4Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
-MetatileSetLabels_8x8=Unlabeled,Unlabeled
-MetatileSetLabels_8x8Undo=Unlabeled,Unlabeled
+MetatileSetLabels_8x8=Unlabeled,Unlabeled
+MetatileSetLabels_8x8Undo=Unlabeled,Unlabeled
 
 CHRBankLabels=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
@@ -444,16 +446,16 @@ MsprDirectTagHalfSeconds=0[100]
 MsprDirectTagHalfSecondsUndo=0[100]
 
 
-Checkpoint_Palette=0f0010300f0c21320f0516270f0b1a290f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
+Checkpoint_Palette=0f0010300f0c21320f0c21110f0b1a290f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
 
 
-Checkpoint_PalUndo=0f0010300f0c21320f0516270f0b1a290f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
+Checkpoint_PalUndo=0f0010300f0c21320f0c21110f0b1a290f1c21320f1122330f1223340f1324350f1324360f1526370f1627370f1928380f1829380f1b2a390f1b2b3c0f1c2c3b
 
 
-Checkpoint_CHRMain=00[4000]
+Checkpoint_CHRMain=000103[4]010400[2]01[3]00[2]031e1f3f[3]7e7dff0100[3]0103060cf0c8e4fcf4[3]fc00f0f880e8[2]680070acdeff[2]f7[3]80502060f078[2]f8fb[3]f77f[3]7d0c[3]080407060e7d[2]7b[2]77fcf4fa0e[2]1c143820383cefedfbfe[2]ecf4[2]fa76041030707838f4f0[2]f8e0f0[2]fc38[3]207040f8[2]000103[4]010400[2]01[3]00[2]031e1f3f[3]7e7dff0100[3]0103060cf0c8e4fcf4[3]fc00f0f880e8[2]680070acdeff[2]f7[3]80502060f078[2]f8fbfdf8ff7f[3]7d0c0e07000407060e7d[2]7b[2]77fcf4fa0e[2]1c143820383cefedfbfe[2]ecf4[2]fa76041030707838f4f0[2]f8e0f0[2]fc38[3]207040f8[2]000103[4]0100[3]01[3]00[2]03070f1f[2]3f[4]00[5]01[2]03f0c8e4fcf4[3]fc00f0f880e8[2]68007088fc[2]ecee7e[2]80700020f0b0[2]903f[8]03[2]0100[2]01[2]003f7f[5]ff[2]00[3]01[2]03[3]fee6eefe[2]fcdc[2]00f8f000[2]80e0[2]dcd8f8[2]b0f0d0f8e0[2]c080c000e0[2]000103[4]0100[3]01[3]00[2]0306070f1f[3]3f[2]0100[3]01[2]00[2]f0c8e4fcf4[3]fc00f0f880e8[2]68007088f8d8eefdf9fb807000a0b0c2fe7c7f[4]3f[4]0001[2]000203[2]063f7d7b[2]7f77fffb06[2]0c[2]1018203cfe[2]ee9cfc[2]f4[2]00[2]f06000b038[2]f4[2]f8e8f0d0f0e838[2]30[2]40e0c0f000[3e00]
 
 
-Checkpoint_CHRUndo=00[4000]
+Checkpoint_CHRUndo=00[10]ff00[6]ff[8]00ff80[6]ff7f[7]00ff08[6]fff7[7]00ff00[6]ff[8]00ff80[3]848280[2]ff[4]fbfdff[2]fe01[7]fffe[7]80[7]7fff[7]8001[2]211101[3]fffe[2]deeefe[3]00[3f71]
 
 
 Checkpoint_NameTable=00[3c0]
@@ -468,16 +470,16 @@ Checkpoint_AttrTable=00[40]
 Checkpoint_AttrUndo=00[40]
 
 
-Checkpoint_MetaSprites=ff[10000]
+Checkpoint_MetaSprites=300602402002[2]402000023830040238ff[f0]200a024020080238300c0238300e0240300c0238300e0240ff[e8]20100238201202403014023830160240ff[f0]201a024020180238301c0238301e0240ff[f1]1a0240ff180238ff1c0238ff0e0240ff[fbf0]
 
 
-Checkpoint_MetaSprites_show=0[4000]
+Checkpoint_MetaSprites_show=1[4]0[3c]1[6]0[3a]1[4]0[3c]1[4]0[3f3c]
 
 
-Checkpoint_MetaSpritesUndo=ff[10000]
+Checkpoint_MetaSpritesUndo=300602402002[2]402000023830040238ff[f0]200a024020080238300c0238300e0240300c0238300e0240ff[e8]20100238201202403014023830160240ff[f0]201a024020180238301c0238301e0240ff[f1]1a0240ff180238ff1c0238ff0e0240ff[fbf0]
 
 
-Checkpoint_MetaSpritesUndo_show=0[4000]
+Checkpoint_MetaSpritesUndo_show=1[4]0[3c]1[6]0[3a]1[4]0[3c]1[4]0[3f3c]
 
 
 Checkpoint_32_BankViewTable=00000000[100]00001000[100]00002000[100]00003000[100]
@@ -492,10 +494,10 @@ Checkpoint_8_TileCollisionProperties=00[400]
 Checkpoint_8_TileCollisionPropertiesUndo=00[400]
 
 
-Checkpoint_PropertyConditions=0[20]
+Checkpoint_PropertyConditions=1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]
 
 
-Checkpoint_PropertyConditionsUndo=0[20]
+Checkpoint_PropertyConditionsUndo=1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]1[2]0[2]
 
 
 Checkpoint_TilePropConditionType=00[7]02
@@ -558,14 +560,14 @@ Checkpoint_MetatileSet_8x8_props=00[2000]
 Checkpoint_MetatileSet_8x8_propsUndo=00[2000]
 
 
-Checkpoint_MetatileSetLabels_2x2=Unlabeled,Unlabeled,Unlabeled,Unlabeled
-Checkpoint_MetatileSetLabels_2x2Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_2x2=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_2x2Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
-Checkpoint_MetatileSetLabels_4x4=Unlabeled,Unlabeled,Unlabeled,Unlabeled
-Checkpoint_MetatileSetLabels_4x4Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_4x4=Unlabeled,Unlabeled,Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_4x4Undo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
-Checkpoint_MetatileSetLabels_8x8=Unlabeled,Unlabeled
-Checkpoint_MetatileSetLabels_8x8Undo=Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_8x8=Unlabeled,Unlabeled
+Checkpoint_MetatileSetLabels_8x8Undo=Unlabeled,Unlabeled
 
 Checkpoint_CHRBankLabels=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 
@@ -575,13 +577,13 @@ Checkpoint_CHRBankLabelsUndo=Unlabeled,Unlabeled,Unlabeled,Unlabeled
 Checkpoint_32_NTSC_MsprDuration=00000006[100]
 
 
-Checkpoint_32_NTSC_MsprDurationUndo=00000000[100]
+Checkpoint_32_NTSC_MsprDurationUndo=00000006[100]
 
 
 Checkpoint_32_PAL_MsprDuration=00000005[100]
 
 
-Checkpoint_32_PAL_MsprDurationUndo=00000000[100]
+Checkpoint_32_PAL_MsprDurationUndo=00000005[100]
 
 
 Checkpoint_MsprDirectTagStart=0[100]
@@ -638,7 +640,7 @@ Current preset ID=0
 
 GUI behaviour:
 ---------------------------------------------------------
-Use paired mode if possible=1
+Use paired mode if possible=0
 Affect backgrounds=1
 Affect sprites=1
 
