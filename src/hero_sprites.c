@@ -13,9 +13,9 @@ const u8 hero_walk2[]  = { FRAME_16x32(0x10) };
 const u8 hero_walk3[]  = { FRAME_16x32(0x18) };
 const u8 hero_crouch[] = { FRAME_16x32(0x20) };
 
-const u8 hero_attack1[]        = { FRAME_16x32(0x00) };
-const u8 hero_attack2[]        = { FRAME_16x32(0x00) };
-const u8 hero_crouch_attack1[] = { FRAME_16x32(0x20) };
+const u8 hero_attack1[]        = { FRAME_16x32(0x28) };
+const u8 hero_attack2[]        = { FRAME_16x32(0x30) };
+const u8 hero_crouch_attack1[] = { FRAME_16x32(0x38) };
 const u8 hero_crouch_attack2[] = { FRAME_16x32(0x20) };
 
 const u8 sword_raised[] = {

@@ -1,14 +1,16 @@
 # Moonlight
 
 An NES game in C (cc65) on an MMC1 cartridge. This is the project setup: the
-runtime, banking and build are in place, and `main.c` runs a movement test room
-(a room loaded from a switchable bank, plus a sprite you move with the d-pad).
+runtime, banking and build are in place, and `main.c` runs a test screen drawn
+in NEXXT where the knight walks, jumps, crouches and attacks with a sword.
 
 ## Requirements
 
 - **cc65** (2.19 or newer): `sudo apt install cc65`, `brew install cc65`, or
   the Windows snapshot from cc65.github.io
-- **make** and **Python 3** (only for regenerating placeholder graphics)
+- **make** and a normal C compiler (`gcc`, `clang` or `cc`; on WSL/Ubuntu:
+  `sudo apt install gcc`). It builds `tools/nam2level.c`, the level converter;
+  set `HOSTCC=` to use a different compiler.
 
 ## Build and run
 
@@ -42,14 +44,15 @@ Mirroring is vertical, which suits horizontal scrolling.
 | `src/crt0.s` | iNES header, reset stubs in every bank, hardware init, C runtime start, NMI handler |
 | `src/mmc1.s` | MMC1 register writes (`mmc1_set_prg_bank`, `mmc1_set_chr0/1`, `mmc1_set_control`) |
 | `src/pad.s` | Controller reading |
-| `src/nes.h` / `src/nes.c` | Registers, frame sync, VRAM, palette, sprite and banked-copy helpers |
-| `src/level.h` / `src/level.c` | Rooms, metatiles (tiles, palette, collision), drawing, `level_solid_at` |
-| `src/bank0.c` | Level data stored in PRG bank 0 (currently the movement test room) |
-| `src/player.h` / `src/player.c` | Player movement: walking, committed jump, gravity, collision, drawing (tuning constants in `player.h`) |
+| `src/nes.h` / `src/nes.c` | Registers, frame sync, VRAM, palette, sprite, metasprite and banked-copy helpers |
+| `src/level.h` / `src/level.c` | Loads converted screens from their bank, draws them, `level_solid_at` |
+| `src/player.h` / `src/player.c` | Movement, animation states and the sword attack (tuning constants in `player.h`) |
+| `src/hero_sprites.h` / `src/hero_sprites.c` | The knight's frames and the sword pieces, as metasprites |
+| `levels/*.nam`, `levels/*.pal` | Screens and their background palettes, saved from NEXXT |
+| `levels/collision.txt` | Which background tiles are solid |
 | `src/main.c` | Setup and the main loop |
 | `cfg/mmc1.cfg` | Linker layout of the banks |
-| `tools/make_chr.py` | Builds placeholder `chr/*.chr` from text art |
-| `tools/headless_shot.rs` | Runs the ROM in your emulator without a window and saves screenshots |
+| `tools/nam2level.c` | Converts `levels/*.nam` into metatiles and rooms (`build/levels.c`/`.h`); built and run by `make` |
 
 ## How a frame works
 
@@ -83,14 +86,3 @@ routines and call them from the fixed bank after switching.
 - Avoid multiply, divide and modulo on variables. Use shifts and lookup tables.
 - Read `build/*.s` to see what the compiler produced. When you port to
   assembly, start with whatever is slowest.
-
-## Testing headless
-
-`tools/headless_shot.rs` is a Cargo example for your emulator. Copy it to
-`NES-Emulator/examples/` and run:
-
-```
-cargo run --release --example headless_shot -- path/to/game.nes out
-```
-
-It holds RIGHT on frames 60–119 and saves `out_59.ppm` and `out_149.ppm`.

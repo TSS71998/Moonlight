@@ -30,33 +30,26 @@ static void __fastcall__ set_state(u8 state) {
     }
 }
 
-/* ---- Sword attack ------------------------------------------------------- */
-/* Castlevania rules: on the ground you stop and can't turn until the swing
-   ends; in the air you keep your jump's momentum; holding Down when you
-   press B gives a crouching attack. */
 typedef struct {
-    const u8 *body;         /* body while standing or in the air */
-    const u8 *body_crouch;  /* body while crouching */
-    const u8 *sword;        /* sword pieces */
-    u8 frames;              /* how long this phase lasts */
-    u8 sword_in_front;      /* 1 = sword drawn over the body */
-    u8 hits;                /* 1 = the sword hitbox is active */
+    const u8 *body;
+    const u8 *body_crouch;
+    const u8 *sword;
+    u8 frames;
+    u8 sword_in_front;
+    u8 hits;
 } AttackPhase;
 
 static const AttackPhase attack_phases[] = {
-    /* wind up: sword raised behind the head */
     { hero_attack1, hero_crouch_attack1, sword_raised,  5, 0, 0 },
-    /* swing: sword coming forward */
     { hero_attack2, hero_crouch_attack2, sword_swing,   3, 1, 0 },
-    /* strike: sword straight out, can hit */
     { hero_attack2, hero_crouch_attack2, sword_thrust, 12, 1, 1 },
 };
 #define ATTACK_PHASES (sizeof(attack_phases) / sizeof(attack_phases[0]))
 
 static u8 attack_phase;
 static u8 attack_timer;
-static u8 attack_crouch;        /* this attack started crouched */
-static u8 attack_air_state;     /* PS_JUMP or PS_FALL to return to mid-air */
+static u8 attack_crouch;
+static u8 attack_air_state;
 
 u8 player_attack_hit;
 u8 player_hit_x1, player_hit_y1, player_hit_x2, player_hit_y2;
@@ -186,8 +179,6 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
     }
 
     if (player_state == PS_ATTACK) {
-        /* committed to the swing: no walking, turning or jumping, but a
-           jump keeps its momentum until you land */
         vx = player_on_ground ? 0 : player_jump_vx;
     } else if (player_on_ground) {
         vx = 0;
@@ -205,7 +196,7 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
             player_vy = -JUMP_VELOCITY;
             player_jump_vx = vx > 0 ? JUMP_SPEED : vx < 0 ? -JUMP_SPEED : 0;
             player_on_ground = 0;
-            set_state(PS_JUMP);                 /* walk fix: was missing */
+            set_state(PS_JUMP);
         }
     } else {
         vx = player_jump_vx;
