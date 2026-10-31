@@ -30,6 +30,8 @@
 
 #define JUMP_UNTUCK_VY   0x0100
 
+#define STEP_HEIGHT      8
+
 #define CROUCH_DROP      10
 
 #define SWORD_HB_X1      10

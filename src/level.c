@@ -7,6 +7,8 @@ static u8 mt_info[256];
 static const u8 *cur_mt_tiles;
 static u8 cur_bank;
 
+static const u8 quarter_bit[4] = { 0x10, 0x20, 0x40, 0x80 };
+
 void __fastcall__ level_load(u8 bank, const LevelDef *lvl) {
     static LevelDef def;
 
@@ -55,5 +57,6 @@ void level_draw(void) {
 
 u8 __fastcall__ level_solid_at(u8 x, u8 y) {
     if (y >= 240) return 0;
-    return mt_info[room[(y & 0xF0) | (x >> 4)]] & COLL_SOLID;
+    return mt_info[room[(y & 0xF0) | (x >> 4)]]
+        & quarter_bit[((y >> 2) & 2) | ((x >> 3) & 1)];
 }

@@ -11,7 +11,8 @@
  * plus levels/collision.txt, which says which background tiles are solid.
  *
  * Output: build/levels.c and build/levels.h. Each screen becomes:
- *   - a set of metatiles: every distinct 16x16 block (4 tiles + its palette)
+ *   - a set of metatiles: every distinct 16x16 block (4 tiles + its palette,
+ *     and which of its four 8x8 tiles are solid)
  *   - a 16x15 room map of metatile numbers
  *   - the palette, if there is one
  * all stored in PRG bank LEVEL_BANK and loaded with level_load().
@@ -27,7 +28,8 @@
 #define LEVEL_BANK  0       /* PRG bank the data is stored in (segment BANK0) */
 #define ROOM_W      16
 #define ROOM_H      15
-#define COLL_SOLID  0x10    /* must match level.h (collision in bits 4-7) */
+#define COLL_TL     0x10    /* must match level.h: bits 4-7 = solid quarters */
+#define COLL_MASK   0xF0    /* must match level.h (collision in bits 4-7) */
 
 typedef struct {
     unsigned char tiles[4]; /* TL, TR, BL, BR */
@@ -181,7 +183,7 @@ int main(int argc, char **argv) {
                 m.info = (attr[(my >> 1) * 8 + (mx >> 1)]
                           >> (((my & 1) << 2) | ((mx & 1) << 1))) & 3;
                 for (k = 0; k < 4; ++k)
-                    if (solid[m.tiles[k]]) m.info |= COLL_SOLID;
+                    if (solid[m.tiles[k]]) m.info |= (unsigned char)(COLL_TL << k);
 
                 for (j = 0; j < n_mts; ++j)
                     if (!memcmp(&mts[j], &m, sizeof(m))) break;
@@ -197,11 +199,11 @@ int main(int argc, char **argv) {
 
         screen_name(nam, name, sizeof(name));
         for (j = 0; j < n_mts; ++j)
-            if (mts[j].info & COLL_SOLID) ++n_solid;
+            if (mts[j].info & COLL_MASK) ++n_solid;
         if (pal_size >= 0)
-            printf("%s: %d metatiles (%d solid), palette from %s\n", nam, n_mts, n_solid, pal_path);
+            printf("%s: %d metatiles (%d with solid tiles), palette from %s\n", nam, n_mts, n_solid, pal_path);
         else
-            printf("%s: %d metatiles (%d solid), palette unchanged\n", nam, n_mts, n_solid);
+            printf("%s: %d metatiles (%d with solid tiles), palette unchanged\n", nam, n_mts, n_solid);
 
         fprintf(fc, "/* %s */\n", nam);
         fprintf(fc, "static const u8 %s_mt_tiles[] = {  /* TL, TR, BL, BR */\n", name);

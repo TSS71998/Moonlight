@@ -30,7 +30,7 @@ void main(void) {
     scroll_x = 0;
     scroll_y = 0;
     ppu_on();
-    //ppu_mask |= 0x60; 
+    ppu_mask |= 0x60; 
 
     for (;;) {
         pad = pad_poll(0);

@@ -6,9 +6,12 @@
 #define ROOM_W 16
 #define ROOM_H 15
 
-/* Metatile info byte (made by tools/nam2level.c from your NEXXT screens) */
-#define MT_PAL_MASK 0x03   /* bits 0-1: background palette */
-#define COLL_SOLID 0x10    /* bit 4: solid, from levels/collision.txt */
+/* Metatile info byte (made by tools/nam2level.c from your NEXXT screens):
+    bits 0-1  background palette
+    bits 4-7  which 8x8 tiles of the block are solid (from levels/collision.txt):
+              bit 4 top-left, 5 top-right, 6 bottom-left, 7 bottom-right */
+#define MT_PAL_MASK 0x03
+#define COLL_MASK   0xF0   /* any solid tile in the block */
 
 typedef struct {
     const u8 *mt_tiles;     /* 4 tiles per metatile: TL, TR, BL, BR */

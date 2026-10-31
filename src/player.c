@@ -67,7 +67,6 @@ static void __fastcall__ update_attack(u8 pad) {
 
     if (--attack_timer == 0) {
         if (++attack_phase == ATTACK_PHASES) {
-            /* done: back to whatever the player is doing now */
             player_attack_hit = 0;
             if (!player_on_ground)   player_state = attack_air_state;
             else if (pad & PAD_DOWN) player_state = PS_CROUCH;
@@ -81,13 +80,12 @@ static void __fastcall__ update_attack(u8 pad) {
 
     player_attack_hit = attack_phases[attack_phase].hits;
     if (player_attack_hit) {
-        ax = HI(player_x) + 8;                  /* feet anchor */
+        ax = HI(player_x) + 8;
         ay = HI(player_y) + 32 + (attack_crouch ? CROUCH_DROP : 0);
         if (player_facing == FACE_RIGHT) {
             player_hit_x1 = ax + SWORD_HB_X1;
             player_hit_x2 = ax + SWORD_HB_X2;
         } else {
-            /* mirror around the anchor: pixel +k becomes -1-k */
             player_hit_x1 = ax - 1 - SWORD_HB_X2;
             player_hit_x2 = ax - 1 - SWORD_HB_X1;
         }
@@ -110,13 +108,26 @@ void __fastcall__ player_init(u8 x, u8 y) {
 
 static u8 __fastcall__ wall_at(u8 edge_x, u8 top_y) {
     return level_solid_at(edge_x, top_y + HB_TOP)
-        || level_solid_at(edge_x, top_y + 17)
+        || level_solid_at(edge_x, top_y + 10)
+        || level_solid_at(edge_x, top_y + 18)
+        || level_solid_at(edge_x, top_y + 26)
         || level_solid_at(edge_x, top_y + HB_BOTTOM);
 }
 
 static u8 __fastcall__ floor_at(u8 left_x, u8 edge_y) {
     return level_solid_at(left_x + HB_LEFT, edge_y)
+        || level_solid_at(left_x + 8, edge_y)
         || level_solid_at(left_x + HB_RIGHT, edge_y);
+}
+
+static u8 __fastcall__ step_up(u8 edge, u8 new_x) {
+    static u8 top;
+    if (!STEP_HEIGHT || !player_on_ground) return 0;
+    top = HI(player_y) - STEP_HEIGHT;
+    if (wall_at(edge, top)) return 0;
+    if (floor_at(new_x, top + HB_TOP)) return 0;
+    player_y -= (u16)STEP_HEIGHT << 8;
+    return 1;
 }
 
 static void move_horizontal(s16 vx) {
@@ -126,15 +137,18 @@ static void move_horizontal(s16 vx) {
     nx = player_x + vx;
     if (vx > 0) {
         edge = HI(nx) + HB_RIGHT;
-        if (wall_at(edge, HI(player_y))) {
-            nx = (u16)((edge & 0xF0) - 1 - HB_RIGHT) << 8;
+        if (wall_at(edge, HI(player_y)) && !step_up(edge, HI(nx))) {
+            nx = (u16)((edge & 0xF8) - 1 - HB_RIGHT) << 8;   /* 8x8 tile edge */
         }
     } else {
         edge = HI(nx) + HB_LEFT;
-        if (wall_at(edge, HI(player_y))) {
-            nx = (u16)((edge & 0xF0) + 16 - HB_LEFT) << 8;
+        if (wall_at(edge, HI(player_y)) && !step_up(edge, HI(nx))) {
+            nx = (u16)((edge & 0xF8) + 8 - HB_LEFT) << 8;
         }
     }
+
+    if (vx < 0 && HI(nx) > HI(player_x)) nx = 0;
+    if (vx > 0 && HI(nx) > 256 - PLAYER_WIDTH) nx = (u16)(256 - PLAYER_WIDTH) << 8;
     player_x = nx;
 }
 
@@ -151,7 +165,7 @@ static void move_vertical(void) {
         if (py < 240 - HB_BOTTOM) {
             edge = py + HB_BOTTOM;
             if (floor_at(HI(player_x), edge)) {
-                ny = (u16)((edge & 0xF0) - 1 - HB_BOTTOM) << 8;
+                ny = (u16)((edge & 0xF8) - 1 - HB_BOTTOM) << 8;
                 player_vy = 0;
                 player_jump_vx = 0;
                 player_on_ground = 1;
@@ -160,7 +174,7 @@ static void move_vertical(void) {
     } else {
         edge = py + HB_TOP;
         if (floor_at(HI(player_x), edge)) {
-            ny = (u16)((edge & 0xF0) + 16 - HB_TOP) << 8;
+            ny = (u16)((edge & 0xF8) + 8 - HB_TOP) << 8;
             player_vy = 0;
         }
     }
@@ -205,7 +219,12 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
     if (vx) move_horizontal(vx);
 
     if (player_on_ground) {
-        if (!floor_at(HI(player_x), HI(player_y) + HB_BOTTOM + 1)) {
+        if (floor_at(HI(player_x), HI(player_y) + HB_BOTTOM + 1)) {
+            /* still standing on something */
+        } else if (STEP_HEIGHT &&
+                   floor_at(HI(player_x), HI(player_y) + HB_BOTTOM + 1 + STEP_HEIGHT)) {
+            player_y += (u16)STEP_HEIGHT << 8;
+        } else {
             player_on_ground = 0;
             player_vy = 0;
             player_jump_vx = 0;
