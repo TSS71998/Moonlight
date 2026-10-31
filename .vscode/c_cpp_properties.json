@@ -2,7 +2,10 @@
     "configurations": [
         {
             "name": "cc65 (NES)",
-            "includePath": ["${workspaceFolder}/src"],
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/build"
+            ],
             "defines": [
                 "__CC65__",
                 "__NES__",

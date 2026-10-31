@@ -6,8 +6,9 @@
 #define ROOM_W 16
 #define ROOM_H 15
 
-#define MT_PAL_MASK 0x03
-#define COLL_SOLID 0x10
+/* Metatile info byte (made by tools/nam2level.c from your NEXXT screens) */
+#define MT_PAL_MASK 0x03   /* bits 0-1: background palette */
+#define COLL_SOLID 0x10    /* bit 4: solid, from levels/collision.txt */
 
 typedef struct {
     const u8 *mt_tiles;     /* 4 tiles per metatile: TL, TR, BL, BR */
@@ -19,7 +20,7 @@ typedef struct {
 
 extern u8 room[ROOM_W * ROOM_H];
 
-void __fastcall__ level_load(u8 bank, const u8 *src);
+void __fastcall__ level_load(u8 bank, const LevelDef *lvl);
 
 void level_draw(void);
 

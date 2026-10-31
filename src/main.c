@@ -1,5 +1,6 @@
 #include "nes.h"
 #include "level.h"
+#include "levels.h"
 #include "player.h"
 
 static const u8 palette[32] = {
