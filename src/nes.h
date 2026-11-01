@@ -99,6 +99,8 @@ void __fastcall__ vram_write(const u8 *src, u16 len);
    Keep the total under ~100 bytes per frame. */
 void __fastcall__ vram_buf_put(u16 adr, const u8 *src, u8 len);
 
+#define VRAM_DOWN 0x8000
+
 /* Palettes: 32 bytes (4 BG + 4 sprite palettes), uploaded next NMI. */
 void __fastcall__ pal_all(const u8 *pal);
 

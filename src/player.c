@@ -52,7 +52,8 @@ static u8 attack_crouch;
 static u8 attack_air_state;
 
 u8 player_attack_hit;
-u8 player_hit_x1, player_hit_y1, player_hit_x2, player_hit_y2;
+u16 player_hit_x1, player_hit_x2;
+u8 player_hit_y1, player_hit_y2;
 
 static void __fastcall__ start_attack(u8 pad) {
     attack_crouch = player_on_ground && (pad & PAD_DOWN);
@@ -63,7 +64,8 @@ static void __fastcall__ start_attack(u8 pad) {
 }
 
 static void __fastcall__ update_attack(u8 pad) {
-    static u8 ax, ay;
+    static u16 ax;
+    static u8 ay;
 
     if (--attack_timer == 0) {
         if (++attack_phase == ATTACK_PHASES) {
@@ -80,7 +82,7 @@ static void __fastcall__ update_attack(u8 pad) {
 
     player_attack_hit = attack_phases[attack_phase].hits;
     if (player_attack_hit) {
-        ax = HI(player_x) + 8;
+        ax = player_x + 8;                      /* feet anchor, level x */
         ay = HI(player_y) + 32 + (attack_crouch ? CROUCH_DROP : 0);
         if (player_facing == FACE_RIGHT) {
             player_hit_x1 = ax + SWORD_HB_X1;
@@ -94,8 +96,8 @@ static void __fastcall__ update_attack(u8 pad) {
     }
 }
 
-void __fastcall__ player_init(u8 x, u8 y) {
-    spawn_x = player_x = (u16)x << 8;
+void __fastcall__ player_init(u16 x, u8 y) {
+    spawn_x = player_x = x;
     spawn_y = player_y = (u16)y << 8;
     player_vy = 0;
     player_jump_vx = 0;
@@ -106,7 +108,7 @@ void __fastcall__ player_init(u8 x, u8 y) {
     anim_timer = WALK_ANIM_DELAY;
 }
 
-static u8 __fastcall__ wall_at(u8 edge_x, u8 top_y) {
+static u8 __fastcall__ wall_at(u16 edge_x, u8 top_y) {
     return level_solid_at(edge_x, top_y + HB_TOP)
         || level_solid_at(edge_x, top_y + 10)
         || level_solid_at(edge_x, top_y + 18)
@@ -114,13 +116,13 @@ static u8 __fastcall__ wall_at(u8 edge_x, u8 top_y) {
         || level_solid_at(edge_x, top_y + HB_BOTTOM);
 }
 
-static u8 __fastcall__ floor_at(u8 left_x, u8 edge_y) {
+static u8 __fastcall__ floor_at(u16 left_x, u8 edge_y) {
     return level_solid_at(left_x + HB_LEFT, edge_y)
         || level_solid_at(left_x + 8, edge_y)
         || level_solid_at(left_x + HB_RIGHT, edge_y);
 }
 
-static u8 __fastcall__ step_up(u8 edge, u8 new_x) {
+static u8 __fastcall__ step_up(u16 edge, u16 new_x) {
     static u8 top;
     if (!STEP_HEIGHT || !player_on_ground) return 0;
     top = HI(player_y) - STEP_HEIGHT;
@@ -131,24 +133,23 @@ static u8 __fastcall__ step_up(u8 edge, u8 new_x) {
 }
 
 static void move_horizontal(s16 vx) {
-    static u16 nx;
-    static u8 edge;
+    static u16 nx, edge;
 
-    nx = player_x + vx;
+    if (vx < 0 && player_x < (u16)-vx) nx = 0;
+    else nx = player_x + vx;
+    if (nx > level_width - PLAYER_WIDTH) nx = level_width - PLAYER_WIDTH;
+
     if (vx > 0) {
-        edge = HI(nx) + HB_RIGHT;
-        if (wall_at(edge, HI(player_y)) && !step_up(edge, HI(nx))) {
-            nx = (u16)((edge & 0xF8) - 1 - HB_RIGHT) << 8;   /* 8x8 tile edge */
+        edge = nx + HB_RIGHT;
+        if (wall_at(edge, HI(player_y)) && !step_up(edge, nx)) {
+            nx = (edge & 0xFFF8) - 1 - HB_RIGHT;    /* 8x8 tile edge */
         }
     } else {
-        edge = HI(nx) + HB_LEFT;
-        if (wall_at(edge, HI(player_y)) && !step_up(edge, HI(nx))) {
-            nx = (u16)((edge & 0xF8) + 8 - HB_LEFT) << 8;
+        edge = nx + HB_LEFT;
+        if (wall_at(edge, HI(player_y)) && !step_up(edge, nx)) {
+            nx = (edge & 0xFFF8) + 8 - HB_LEFT;
         }
     }
-
-    if (vx < 0 && HI(nx) > HI(player_x)) nx = 0;
-    if (vx > 0 && HI(nx) > 256 - PLAYER_WIDTH) nx = (u16)(256 - PLAYER_WIDTH) << 8;
     player_x = nx;
 }
 
@@ -164,7 +165,7 @@ static void move_vertical(void) {
     if (player_vy > 0) {
         if (py < 240 - HB_BOTTOM) {
             edge = py + HB_BOTTOM;
-            if (floor_at(HI(player_x), edge)) {
+            if (floor_at(player_x, edge)) {
                 ny = (u16)((edge & 0xF8) - 1 - HB_BOTTOM) << 8;
                 player_vy = 0;
                 player_jump_vx = 0;
@@ -173,7 +174,7 @@ static void move_vertical(void) {
         }
     } else {
         edge = py + HB_TOP;
-        if (floor_at(HI(player_x), edge)) {
+        if (floor_at(player_x, edge)) {
             ny = (u16)((edge & 0xF8) + 8 - HB_TOP) << 8;
             player_vy = 0;
         }
@@ -181,7 +182,7 @@ static void move_vertical(void) {
     player_y = ny;
 
     if (HI(player_y) >= 240 && HI(player_y) < 250) {
-        player_init(HI(spawn_x), HI(spawn_y));
+        player_init(spawn_x, HI(spawn_y));
     }
 }
 
@@ -219,10 +220,10 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
     if (vx) move_horizontal(vx);
 
     if (player_on_ground) {
-        if (floor_at(HI(player_x), HI(player_y) + HB_BOTTOM + 1)) {
+        if (floor_at(player_x, HI(player_y) + HB_BOTTOM + 1)) {
             /* still standing on something */
         } else if (STEP_HEIGHT &&
-                   floor_at(HI(player_x), HI(player_y) + HB_BOTTOM + 1 + STEP_HEIGHT)) {
+                   floor_at(player_x, HI(player_y) + HB_BOTTOM + 1 + STEP_HEIGHT)) {
             player_y += (u16)STEP_HEIGHT << 8;
         } else {
             player_on_ground = 0;
@@ -255,15 +256,19 @@ void player_draw(void) {
     static const u8 *frame;
     static const AttackPhase *ph;
     static u8 ax, ay, flip;
+    static u16 sx;
 
-    ax = HI(player_x) + 8;          /* anchor = middle of the feet */
+    /* on screen? (while the camera catches up after a respawn it may not be) */
+    sx = player_x - camera_x;
+    if (sx > 256 - PLAYER_WIDTH) return;
+
+    ax = (u8)sx + 8;                /* anchor = middle of the feet */
     ay = HI(player_y) + 32;
     flip = player_facing == FACE_LEFT ? SPR_FLIP_H : 0;
 
     if (player_state == PS_ATTACK) {
         ph = &attack_phases[attack_phase];
         frame = attack_crouch ? ph->body_crouch : ph->body;
-        /* sprites added first are drawn on top */
         if (ph->sword_in_front) {
             oam_meta_spr(ax, ay + (attack_crouch ? CROUCH_DROP : 0), ph->sword, flip);
             oam_meta_spr(ax, ay, frame, flip);

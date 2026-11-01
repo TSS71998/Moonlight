@@ -3,8 +3,8 @@
 
 #include "nes.h"
 
-#define WALK_SPEED    0x0100
-#define JUMP_SPEED    0x0100
+#define WALK_SPEED    1
+#define JUMP_SPEED    1
 #define JUMP_VELOCITY 0x0380
 #define GRAVITY       0x0028
 #define MAX_FALL      0x0400
@@ -40,17 +40,18 @@
 #define SWORD_HB_Y2      (-13)
 
 extern u8 player_attack_hit;
-extern u8 player_hit_x1, player_hit_y1, player_hit_x2, player_hit_y2;
+extern u16 player_hit_x1, player_hit_x2;
+extern u8 player_hit_y1, player_hit_y2;
 
-extern u16 player_x;
-extern u16 player_y;      
-extern s16 player_vy;       
-extern s16 player_jump_vx;
+extern u16 player_x;        /* level x of the sprite's left edge, in pixels */
+extern u16 player_y;        /* 8.8 fixed point, top edge of the sprite */
+extern s16 player_vy;       /* 8.8 fixed point, + is down */
+extern s16 player_jump_vx;  /* pixels per frame, locked in when jumping */
 extern u8  player_facing;
 extern u8  player_on_ground;
 extern u8  player_state;
 
-void __fastcall__ player_init(u8 x, u8 y);
+void __fastcall__ player_init(u16 x, u8 y);
 
 void __fastcall__ player_update(u8 pad, u8 pressed);
 

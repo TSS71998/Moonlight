@@ -165,8 +165,9 @@ nmi:
     pha
 
     lda _nmi_ready
-    beq @done
-
+    bne @upload
+    jmp @done
+@upload:
     ; sprites: DMA the 256-byte OAM buffer at $0200
     lda #0
     sta OAMADDR
@@ -197,9 +198,16 @@ nmi:
 @vram_entry:
     cpx _vram_buf_len
     bcs @vram_done
+    lda _ppu_ctrl
+    and #%11111011          ; +1 per byte...
+    ldy _vram_buf,x
+    bpl @vram_across
+    ora #%00000100    
+@vram_across:
+    sta PPUCTRL
     bit PPUSTATUS
     lda _vram_buf,x
-    sta PPUADDR
+    and #$3F     
     inx
     lda _vram_buf,x
     sta PPUADDR

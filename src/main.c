@@ -23,12 +23,12 @@ void main(void) {
     ppu_ctrl = CTRL_NMI | CTRL_SPR_8X16;
 
     pal_all(palette);
-    level_load(LEVEL_BANK, &lvl_test);
+    level_load(LEVEL_BANK, &lvl_forest);
     level_draw();
 
     player_init(120, 160);
-    scroll_x = 0;
     scroll_y = 0;
+    level_draw(0);
     ppu_on();
     ppu_mask |= 0x60; 
 
@@ -38,6 +38,7 @@ void main(void) {
         pad_prev = pad;
 
         player_update(pad, pressed);
+        camera_update(player_x + PLAYER_WIDTH / 2);
 
         oam_clear();
         player_draw();

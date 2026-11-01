@@ -31,6 +31,9 @@
 #define COLL_TL     0x10    /* must match level.h: bits 4-7 = solid quarters */
 #define COLL_MASK   0xF0    /* must match level.h (collision in bits 4-7) */
 
+#define MAX_SCREENS 32
+#define MAX_METATILES 256
+
 typedef struct {
     unsigned char tiles[4]; /* TL, TR, BL, BR */
     unsigned char info;     /* palette | collision */
@@ -119,28 +122,55 @@ static void c_bytes(FILE *f, const unsigned char *v, int count, int per_line) {
     }
 }
 
-static int cmp_str(const void *a, const void *b) {
-    return strcmp(*(const char *const *)a, *(const char *const *)b);
+/* One screen file and the level it belongs to: "levels/forest_2.nam" is
+   screen 2 of level "forest"; "levels/test.nam" is the only screen of "test". */
+typedef struct {
+    const char *path;
+    char level[256];
+    int index;
+} Screen;
+
+static int cmp_screen(const void *a, const void *b) {
+    const Screen *x = (const Screen *)a, *y = (const Screen *)b;
+    int c = strcmp(x->level, y->level);
+    return c ? c : x->index - y->index;
+}
+
+static void split_name(const char *path, char *level, size_t size, int *index) {
+    char name[256], *us;
+    screen_name(path, name, sizeof(name));
+    us = strrchr(name, '_');
+    *index = 0;
+    if (us && us[1] && strspn(us + 1, "0123456789") == strlen(us + 1)) {
+        *index = atoi(us + 1);
+        *us = 0;
+    }
+    snprintf(level, size, "%s", name);
 }
 
 int main(int argc, char **argv) {
     const char *out = NULL, *coll = NULL;
-    char **screens;
-    int n_screens = 0, i;
+    Screen *screens;
+    int n_screens = 0, i, first;
     char path[1024];
     FILE *fc, *fh;
 
-    screens = malloc(sizeof(char *) * (size_t)argc);
+    screens = calloc((size_t)argc, sizeof(Screen));
     for (i = 1; i < argc; ++i) {
         if (!strcmp(argv[i], "-o") && i + 1 < argc) out = argv[++i];
         else if (!strcmp(argv[i], "-c") && i + 1 < argc) coll = argv[++i];
-        else screens[n_screens++] = argv[i];
+        else {
+            screens[n_screens].path = argv[i];
+            split_name(argv[i], screens[n_screens].level,
+                       sizeof(screens[n_screens].level), &screens[n_screens].index);
+            ++n_screens;
+        }
     }
     if (!out || !coll || n_screens == 0)
-        die("usage: nam2level -o build/levels -c levels/collision.txt levels/*.nam");
+        die("usage: nam2level -o build/levels -c levels/collision.txt levels/NAME.nam ...");
 
     parse_collision(coll);
-    qsort(screens, (size_t)n_screens, sizeof(char *), cmp_str);
+    qsort(screens, (size_t)n_screens, sizeof(Screen), cmp_screen);
 
     snprintf(path, sizeof(path), "%s.c", out);
     if (!(fc = fopen(path, "w"))) die("%s: can't write", path);
@@ -156,56 +186,82 @@ int main(int argc, char **argv) {
                 "#define LEVEL_BANK %d   /* PRG bank holding all level data */\n\n",
             LEVEL_BANK);
 
-    for (i = 0; i < n_screens; ++i) {
+    /* each run of screens with the same level name is one level */
+    for (first = 0; first < n_screens; ) {
         static unsigned char data[1025], pal[17];
-        static Metatile mts[ROOM_W * ROOM_H];   /* at most one per cell */
-        static unsigned char room[ROOM_W * ROOM_H], buf[4 * ROOM_W * ROOM_H];
-        const char *nam = screens[i];
-        char name[256], pal_path[1024];
-        int n_mts = 0, n_solid = 0, mx, my, k, j;
-        long size, pal_size;
+        static Metatile mts[MAX_METATILES];
+        static unsigned char map[MAX_SCREENS * ROOM_W * ROOM_H], buf[4 * MAX_METATILES];
+        const char *name = screens[first].level;
+        char pal_path[1024];
+        int n_mts = 0, n_solid = 0, n_scr, mx, my, k, j, sc;
+        long size, pal_size = -1;
 
-        size = read_file(nam, data, sizeof(data));
-        if (size < 0) die("%s: can't open", nam);
-        if (size != 1024)
-            die("%s: %ld bytes, expected 1024. In NEXXT, save the nametable "
-                "with attributes and with RLE turned off.", nam, size);
+        for (n_scr = 0; first + n_scr < n_screens &&
+                        !strcmp(screens[first + n_scr].level, name); ++n_scr) {
+            if (screens[first + n_scr].index != n_scr)
+                die("%s: expected screen %s_%d next (screens are numbered from 0 "
+                    "with no gaps)", screens[first + n_scr].path, name, n_scr);
+        }
+        if (n_scr > MAX_SCREENS)
+            die("level %s: %d screens, the limit is %d", name, n_scr, MAX_SCREENS);
 
-        for (my = 0; my < ROOM_H; ++my) {
-            for (mx = 0; mx < ROOM_W; ++mx) {
-                const unsigned char *t = data, *attr = data + 960;
-                int tx = mx * 2, ty = my * 2;
-                Metatile m;
-                m.tiles[0] = t[ty * 32 + tx];
-                m.tiles[1] = t[ty * 32 + tx + 1];
-                m.tiles[2] = t[(ty + 1) * 32 + tx];
-                m.tiles[3] = t[(ty + 1) * 32 + tx + 1];
-                m.info = (attr[(my >> 1) * 8 + (mx >> 1)]
-                          >> (((my & 1) << 2) | ((mx & 1) << 1))) & 3;
-                for (k = 0; k < 4; ++k)
-                    if (solid[m.tiles[k]]) m.info |= (unsigned char)(COLL_TL << k);
+        for (sc = 0; sc < n_scr; ++sc) {
+            const char *nam = screens[first + sc].path;
+            size = read_file(nam, data, sizeof(data));
+            if (size < 0) die("%s: can't open", nam);
+            if (size != 1024)
+                die("%s: %ld bytes, expected 1024. In NEXXT, save the nametable "
+                    "with attributes and with RLE turned off.", nam, size);
 
-                for (j = 0; j < n_mts; ++j)
-                    if (!memcmp(&mts[j], &m, sizeof(m))) break;
-                if (j == n_mts) mts[n_mts++] = m;
-                room[my * ROOM_W + mx] = (unsigned char)j;
+            for (my = 0; my < ROOM_H; ++my) {
+                for (mx = 0; mx < ROOM_W; ++mx) {
+                    const unsigned char *t = data, *attr = data + 960;
+                    int tx = mx * 2, ty = my * 2;
+                    Metatile m;
+                    m.tiles[0] = t[ty * 32 + tx];
+                    m.tiles[1] = t[ty * 32 + tx + 1];
+                    m.tiles[2] = t[(ty + 1) * 32 + tx];
+                    m.tiles[3] = t[(ty + 1) * 32 + tx + 1];
+                    m.info = (attr[(my >> 1) * 8 + (mx >> 1)]
+                              >> (((my & 1) << 2) | ((mx & 1) << 1))) & 3;
+                    for (k = 0; k < 4; ++k)     /* TL, TR, BL, BR -> bits 4-7 */
+                        if (solid[m.tiles[k]]) m.info |= (unsigned char)(COLL_TL << k);
+
+                    for (j = 0; j < n_mts; ++j)
+                        if (!memcmp(&mts[j], &m, sizeof(m))) break;
+                    if (j == n_mts) {
+                        if (n_mts == MAX_METATILES)
+                            die("level %s: more than %d different 16x16 blocks", name, MAX_METATILES);
+                        mts[n_mts++] = m;
+                    }
+                    map[sc * ROOM_W * ROOM_H + my * ROOM_W + mx] = (unsigned char)j;
+                }
+            }
+
+            /* palette: NAME.pal, or the first screen's NAME_0.pal */
+            if (pal_size < 0) {
+                const char *slash = strrchr(nam, '/');
+                const char *bslash = strrchr(nam, '\\');
+                int dir_len = (int)((slash > bslash ? slash : bslash) ?
+                                    (slash > bslash ? slash : bslash) - nam + 1 : 0);
+                snprintf(pal_path, sizeof(pal_path), "%.*s%s.pal", dir_len, nam, name);
+                pal_size = read_file(pal_path, pal, 16);
+                if (pal_size < 0) {
+                    pal_path_for(nam, pal_path, sizeof(pal_path));
+                    pal_size = read_file(pal_path, pal, 16);
+                }
+                if (pal_size >= 0 && pal_size < 16)
+                    die("%s: expected a 16-byte background palette", pal_path);
             }
         }
 
-        pal_path_for(nam, pal_path, sizeof(pal_path));
-        pal_size = read_file(pal_path, pal, 16);
-        if (pal_size >= 0 && pal_size < 16)
-            die("%s: expected a 16-byte background palette", pal_path);
-
-        screen_name(nam, name, sizeof(name));
         for (j = 0; j < n_mts; ++j)
             if (mts[j].info & COLL_MASK) ++n_solid;
-        if (pal_size >= 0)
-            printf("%s: %d metatiles (%d with solid tiles), palette from %s\n", nam, n_mts, n_solid, pal_path);
-        else
-            printf("%s: %d metatiles (%d with solid tiles), palette unchanged\n", nam, n_mts, n_solid);
+        printf("level %s: %d screen%s, %d metatiles (%d with solid tiles), palette %s%s\n",
+               name, n_scr, n_scr == 1 ? "" : "s", n_mts, n_solid,
+               pal_size >= 0 ? "from " : "unchanged", pal_size >= 0 ? pal_path : "");
 
-        fprintf(fc, "/* %s */\n", nam);
+        fprintf(fc, "/* level %s: %d screen%s */\n", name, n_scr, n_scr == 1 ? "" : "s");
         fprintf(fc, "static const u8 %s_mt_tiles[] = {  /* TL, TR, BL, BR */\n", name);
         for (j = 0; j < n_mts; ++j) memcpy(buf + j * 4, mts[j].tiles, 4);
         c_bytes(fc, buf, n_mts * 4, 16);
@@ -214,8 +270,9 @@ int main(int argc, char **argv) {
         for (j = 0; j < n_mts; ++j) buf[j] = mts[j].info;
         c_bytes(fc, buf, n_mts, 16);
         fprintf(fc, "};\n");
-        fprintf(fc, "static const u8 %s_room[ROOM_W * ROOM_H] = {\n", name);
-        c_bytes(fc, room, ROOM_W * ROOM_H, 16);
+        fprintf(fc, "static const u8 %s_map[%d * ROOM_W * ROOM_H] = {  /* screen by screen */\n",
+                name, n_scr);
+        c_bytes(fc, map, n_scr * ROOM_W * ROOM_H, 16);
         fprintf(fc, "};\n");
         if (pal_size >= 0) {
             fprintf(fc, "static const u8 %s_pal[16] = {\n", name);
@@ -223,12 +280,14 @@ int main(int argc, char **argv) {
             fprintf(fc, "};\n");
         }
         fprintf(fc, "const LevelDef lvl_%s = {\n", name);
-        if (pal_size >= 0)
-            fprintf(fc, "    %s_mt_tiles, %s_mt_info, %s_room, %s_pal, %d\n", name, name, name, name, n_mts);
-        else
-            fprintf(fc, "    %s_mt_tiles, %s_mt_info, %s_room, 0, %d\n", name, name, name, n_mts);
-        fprintf(fc, "};\n\n");
-        fprintf(fh, "extern const LevelDef lvl_%s;   /* from %s */\n", name, nam);
+        fprintf(fc, "    %s_mt_tiles, %s_mt_info, %s_map, ", name, name, name);
+        if (pal_size >= 0) fprintf(fc, "%s_pal, ", name);
+        else fprintf(fc, "0, ");
+        fprintf(fc, "%d, %d\n};\n\n", n_mts, n_scr);
+        fprintf(fh, "extern const LevelDef lvl_%s;   /* %d screen%s */\n",
+                name, n_scr, n_scr == 1 ? "" : "s");
+
+        first += n_scr;
     }
 
     fprintf(fc, "#pragma rodata-name(pop)\n");
