@@ -19,7 +19,7 @@ static const u8 quarter_bit[4] = { 0x10, 0x20, 0x40, 0x80 };
 
 static u8 col_left[ROOM_H * 2];
 static u8 col_right[ROOM_H * 2];
-static u16 col_attr[8];
+static u8 col_attr[8];
 static u16 col_addr;
 static u16 col_attr_addr;
 
@@ -61,7 +61,7 @@ static void __fastcall__ build_column(u16 mcol) {
     }
     mmc1_set_prg_bank(old_bank);
 
-    even = mcol & -1;
+    even = mcol & ~1;
     pe = screen_ptr[even >> 4] + (even & 15);
     for (a = 0; a < 8; ++a) {
         r = a << 1;
@@ -139,10 +139,10 @@ void __fastcall__ camera_update(u16 target) {
     set_scroll();
 }
 
-u8 __fastcall__ level_solid_at(u8 x, u8 y) {
+u8 __fastcall__ level_solid_at(u16 x, u8 y) {
     if (y >= 240) return 0;
     if (x >= level_width) return 1;
 
-    return mt_info[screen_ptr[x >> 8][(y & 0xF0) | (x >> 4)]]
+    return mt_info[screen_ptr[x >> 8][(y & 0xF0) | ((u8)x >> 4)]]
         & quarter_bit[((y >> 2) & 2) | ((x >> 3) & 1)];
 }

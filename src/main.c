@@ -24,7 +24,6 @@ void main(void) {
 
     pal_all(palette);
     level_load(LEVEL_BANK, &lvl_forest);
-    level_draw();
 
     player_init(120, 160);
     scroll_y = 0;

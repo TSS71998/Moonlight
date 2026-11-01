@@ -207,7 +207,8 @@ nmi:
     sta PPUCTRL
     bit PPUSTATUS
     lda _vram_buf,x
-    and #$3F     
+    and #$3F
+    sta PPUADDR
     inx
     lda _vram_buf,x
     sta PPUADDR

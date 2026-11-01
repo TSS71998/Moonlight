@@ -29,10 +29,10 @@ extern u16 camera_x;
 
 void __fastcall__ level_load(u8 bank, const LevelDef *lvl);
 
-void level_draw(void);
+void __fastcall__ level_draw(u16 cam_x);
 
 void __fastcall__ camera_update(u16 target);
 
-u8 __fastcall__ level_solid_at(u8 x, u8 y);
+u8 __fastcall__ level_solid_at(u16 x, u8 y);
 
 #endif
