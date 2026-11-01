@@ -1,5 +1,10 @@
 #include <string.h>
 #include "level.h"
+#include "hud.h"
+
+#define TOP_ROW     HUD_ROWS
+#define TOP_ATTR    (HUD_ROWS / 4)
+#define COL_LEN     (ROOM_H * 2 - TOP_ROW)
 
 u16 level_width;
 u16 camera_x;
@@ -16,12 +21,6 @@ static const u8 *cur_mt_tiles;
 static u8 cur_bank;
 
 static const u8 quarter_bit[4] = { 0x10, 0x20, 0x40, 0x80 };
-
-static u8 col_left[ROOM_H * 2];
-static u8 col_right[ROOM_H * 2];
-static u8 col_attr[8];
-static u16 col_addr;
-static u16 col_attr_addr;
 
 void __fastcall__ level_load(u8 bank, const LevelDef *lvl) {
     static LevelDef def;
@@ -43,50 +42,85 @@ void __fastcall__ level_load(u8 bank, const LevelDef *lvl) {
     cur_bank = bank;
 }
 
-static void __fastcall__ build_column(u16 mcol) {
+/* Queue metatile column q_col for the next vblank, built straight into
+   vram_buf: two 26-tile columns (58 bytes) and, if q_attrs is set, the
+   7 attribute bytes below the HUD (28 more). Attributes cover a 32 px pair
+   of columns, so they're only needed with the first column of a pair that
+   comes into view. Arguments are globals and everything is static: cc65's
+   argument stack is slow, and this runs in the middle of a frame. */
+static u16 q_col;
+static u8 q_attrs;
+
+static void __fastcall__ queue_column(void) {
     static const u8 *p, *pe;
     static const u8 *mt;
-    static u8 r, a, v, old_bank, slot;
-    static u16 even;
+    static u8 r, n, nl, nr, t, v, old_bank, slot;
+    static u16 adr, even;
 
-    p = screen_ptr[mcol >> 4] + (mcol & 15);
+    if (q_col >= level_cols) return;
+
+    slot = (u8)(q_col << 1) & 63;
+    adr = ((slot & 32) ? 0x2400 : 0x2000) + (slot & 31) + TOP_ROW * 32;
+
+    n = vram_buf_len;
+    nl = n + 3;
+    nr = nl + COL_LEN + 3;
+    vram_buf[n] = (u8)(adr >> 8) | (VRAM_DOWN >> 8);
+    vram_buf[n + 1] = (u8)adr;
+    vram_buf[n + 2] = COL_LEN;
+    ++adr;
+    vram_buf[nr - 3] = (u8)(adr >> 8) | (VRAM_DOWN >> 8);
+    vram_buf[nr - 2] = (u8)adr;
+    vram_buf[nr - 1] = COL_LEN;
+
+    p = screen_ptr[q_col >> 4] + (q_col & 15) + (TOP_ROW / 2) * ROOM_W;
     old_bank = prg_bank;
     mmc1_set_prg_bank(cur_bank);
-    for (r = 0; r < ROOM_H; ++r) {
-        mt = cur_mt_tiles + ((u16)p[r << 4] << 2);
-        col_left[r * 2] = mt[0];
-        col_right[r * 2] = mt[1];
-        col_left[r * 2 + 1] = mt[2];
-        col_right[r * 2 + 1] = mt[3];
+    for (r = ROOM_H - TOP_ROW / 2; r; --r) {
+        mt = cur_mt_tiles + ((u16)*p << 2);
+        t = mt[0]; vram_buf[nl] = t; ++nl;     /* TL */
+        t = mt[2]; vram_buf[nl] = t; ++nl;     /* BL */
+        t = mt[1]; vram_buf[nr] = t; ++nr;     /* TR */
+        t = mt[3]; vram_buf[nr] = t; ++nr;     /* BR */
+        p += ROOM_W;
     }
     mmc1_set_prg_bank(old_bank);
+    n = nr;
 
-    even = mcol & ~1;
-    pe = screen_ptr[even >> 4] + (even & 15);
-    for (a = 0; a < 8; ++a) {
-        r = a << 1;
-        v = (mt_info[pe[r << 4]] & 3) | ((mt_info[pe[(r << 4) + 1]] & 3) << 2);
-        if (r + 1 < ROOM_H) {
-            v |= ((mt_info[pe[(r + 1) << 4]] & 3) << 4)
-               | ((mt_info[pe[((r + 1) << 4) + 1]] & 3) << 6);
+    if (q_attrs) {
+        even = q_col & ~1;
+        p = screen_ptr[even >> 4] + (even & 15) + TOP_ATTR * 2 * ROOM_W;
+        adr = ((slot & 32) ? 0x27C0 : 0x23C0) + ((slot & 31) >> 2) + TOP_ATTR * 8;
+        for (r = TOP_ATTR; r < 8; ++r) {
+            t = p[0]; v = mt_info[t] & 3;
+            t = p[1]; v |= (mt_info[t] & 3) << 2;
+            if (r < 7) {    /* the last row of bytes has only its top half */
+                t = p[ROOM_W];     v |= (mt_info[t] & 3) << 4;
+                t = p[ROOM_W + 1]; v |= (mt_info[t] & 3) << 6;
+            }
+            t = (u8)(adr >> 8); vram_buf[n] = t; ++n;
+            t = (u8)adr;        vram_buf[n] = t; ++n;
+            vram_buf[n] = 1; ++n;
+            vram_buf[n] = v; ++n;
+            adr += 8;
+            p += ROOM_W * 2;
         }
-        col_attr[a] = v;
     }
-
-    slot = (u8)(mcol << 1) & 63;
-    col_addr = ((slot & 32) ? 0x2400 : 0x2000) + (slot & 31);
-    col_attr_addr = ((slot & 32) ? 0x27C0 : 0x23C0) + ((slot & 31) >> 2);
+    vram_buf_len = n;
 }
 
-static void __fastcall__ queue_column(u16 mcol) {
-    static u8 a;
-    if (mcol >= level_cols) return;
-    build_column(mcol);
-    vram_buf_put(col_addr | VRAM_DOWN, col_left, ROOM_H * 2);
-    vram_buf_put((col_addr + 1) | VRAM_DOWN, col_right, ROOM_H * 2);
-    for (a = 0; a < 8; ++a) {
-        vram_buf_put(col_attr_addr + (a << 3), &col_attr[a], 1);
+static void flush_vram_buf(void) {
+    static u8 i, len;
+    i = 0;
+    while (i < vram_buf_len) {
+        PPUCTRL = (vram_buf[i] & 0x80) ? (ppu_ctrl | CTRL_INC_32) : (ppu_ctrl & ~CTRL_INC_32);
+        vram_adr(((u16)(vram_buf[i] & 0x3F) << 8) | vram_buf[i + 1]);
+        len = vram_buf[i + 2];
+        i += 3;
+        while (len--) PPUDATA = vram_buf[i++];
     }
+    PPUCTRL = ppu_ctrl;
+    vram_buf_len = 0;
 }
 
 static void set_scroll(void) {
@@ -102,20 +136,12 @@ void __fastcall__ level_draw(u16 cam_x) {
     cam_col = cam_x >> 4;
 
     first = cam_col > 14 ? cam_col - 14 : 0;
+    flush_vram_buf();
+    q_attrs = 1;
     for (i = 0; i < 32; ++i) {
-        c = first + i;
-        if (c >= level_cols) break;
-        build_column(c);
-        PPUCTRL = ppu_ctrl | CTRL_INC_32;
-        vram_adr(col_addr);
-        vram_write(col_left, ROOM_H * 2);
-        vram_adr(col_addr + 1);
-        vram_write(col_right, ROOM_H * 2);
-        PPUCTRL = ppu_ctrl;
-        for (a = 0; a < 8; ++a) {
-            vram_adr(col_attr_addr + (a << 3));
-            vram_put(col_attr[a]);
-        }
+        q_col = first + 1;
+        queue_column();
+        flush_vram_buf();
     }
     set_scroll();
 }
@@ -131,10 +157,16 @@ void __fastcall__ camera_update(u16 target) {
     new_col = camera_x >> 4;
     if (new_col > cam_col) {
         cam_col = new_col;
-        queue_column(cam_col + 17);
+        q_col = cam_col + 17;
+        q_attrs = !(q_col & 1);
+        queue_column();
     } else if (new_col < cam_col) {
         cam_col = new_col;
-        if (cam_col) queue_column(cam_col - 1);
+        if (cam_col) {
+            q_col = cam_col - 1;
+            q_attrs = q_col & 1;
+            queue_column();
+        }
     }
     set_scroll();
 }

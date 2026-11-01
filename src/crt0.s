@@ -21,7 +21,7 @@
 .export _oam_buf     = $0200
 
 .exportzp _frame_count, _nmi_ready, _ppu_ctrl, _ppu_mask
-.exportzp _scroll_x, _scroll_y, _pal_update, _vram_buf_len
+.exportzp _scroll_x, _scroll_y, _pal_update, _vram_buf_len, _hud_split
 .export   _pal_buf, _vram_buf
 
 PPUCTRL   = $2000
@@ -59,6 +59,9 @@ _scroll_x:     .res 1
 _scroll_y:     .res 1
 _pal_update:   .res 1       ; nonzero = upload _pal_buf this NMI
 _vram_buf_len: .res 1       ; bytes used in _vram_buf
+_hud_split:    .res 1
+split_x:       .res 1
+split_ctrl:    .res 1
 
 .segment "BSS"
 _pal_buf:  .res 32          ; 32 palette entries
@@ -237,11 +240,71 @@ nmi:
     lda _ppu_mask
     sta PPUMASK
 
+    ; keep this frame's scroll for the HUD split, which also runs on frames
+    ; where C wasn't ready (and may be halfway through changing _scroll_x)
+    lda _scroll_x
+    sta split_x
+    lda _ppu_ctrl
+    sta split_ctrl
+
     lda #0
     sta _nmi_ready
 
 @done:
     inc _frame_count
+
+    ; HUD split (hud.c): the top of the screen shows nametable 0 unscrolled,
+    ; then sprite 0 hits the HUD's last line and the rest uses the level's
+    ; scroll. Only while the HUD is on and rendering is on, or the hit
+    ; never comes.
+
+    lda _hud_split
+    beq @no_split
+    lda _ppu_mask
+    and #%00011000
+    beq @no_split
+
+    bit PPUSTATUS
+    lda #0
+    sta PPUSCROLL
+    sta PPUSCROLL
+    lda split_ctrl
+    and #%11111100
+    sta PPUCTRL
+
+    ; wait for last frame's hit flag to clear (end of vblank), then for this
+    ; frame's hit. Each wait gives up after ~11000 cycles in case it never
+    ; comes (sprite 0 not where it should be).
+
+    ldx #4
+    ldy #0
+@wait_clear:
+    bit PPUSTATUS
+    bvc @wait_hit_start
+    dey
+    bne @wait_clear
+    dex
+    bne @wait_clear
+    jmp @no_split
+@wait_hit_start:
+    ldx #4
+@wait_hit:
+    bit PPUSTATUS
+    bvc @split
+    dey
+    bne @wait_hit
+    dex
+    bne @wait_hit
+    jmp @no_split
+@split:
+    ; mid-frame only the horizontal scroll (x and the nametable bit) can be
+    ; changed with these two writes; the PPU picks them up at the end of
+    ; this line. (The bit PPUSTATUS above reset the write latch.)
+    lda split_ctrl
+    sta PPUCTRL
+    lda split_x
+    sta PPUSCROLL
+@no_split:
     pla
     tay
     pla

@@ -4,6 +4,7 @@
 #include <string.h>
 
 static u8 oam_idx;
+u8 oam_top;
 
 void ppu_wait_nmi(void) {
     nmi_ready = 1;
@@ -85,7 +86,7 @@ void __fastcall__ oam_meta_spr(u8 x, u8 y, const u8 *data, u8 flip) {
         }
         sx = (s16)x + (s8)dx;
         sy = (s16)y + (s8)p[1];
-        if (sx >= 0 && sx < 256 && sy >= 0 && sy < 240) {
+        if (sx >= 0 && sx < 256 && sy >= oam_top && sy < 240) {
             oam_spr((u8)sx, (u8)sy, p[2] | 1, p[3] ^ flip);
         }
         p += 4;

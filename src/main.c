@@ -2,6 +2,7 @@
 #include "level.h"
 #include "levels.h"
 #include "player.h"
+#include "hud.h"
 
 static const u8 palette[32] = {
     /* background */
@@ -28,6 +29,9 @@ void main(void) {
     player_init(120, 160);
     scroll_y = 0;
     level_draw(0);
+    hud_init();
+    oam_clear();
+    hud_sprite0();
     ppu_on();
     ppu_mask |= 0x60; 
 
@@ -39,7 +43,16 @@ void main(void) {
         player_update(pad, pressed);
         camera_update(player_x + PLAYER_WIDTH / 2);
 
+        //TESTING SCORE
+        if (pressed & PAD_SELECT) {
+            hud_add_score(150);
+            hud_set_player_hp(hud_player_hp ? hud_player_hp - 1 : HUD_BAR_LEN);
+            hud_set_enemy_hp(hud_enemy_hp >= 3 ? hud_enemy_hp - 3 : HUD_BAR_LEN);
+        }
+        hud_update();
+
         oam_clear();
+        hud_sprite0();
         player_draw();
 
         ppu_wait_nmi();

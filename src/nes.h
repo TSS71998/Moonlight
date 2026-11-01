@@ -67,6 +67,7 @@ extern u8 scroll_x;
 extern u8 scroll_y;
 extern u8 pal_update;
 extern u8 vram_buf_len;
+extern u8 hud_split;
 #pragma zpsym("frame_count")
 #pragma zpsym("nmi_ready")
 #pragma zpsym("ppu_ctrl")
@@ -75,6 +76,7 @@ extern u8 vram_buf_len;
 #pragma zpsym("scroll_y")
 #pragma zpsym("pal_update")
 #pragma zpsym("vram_buf_len")
+#pragma zpsym("hud_split")
 
 extern u8 pal_buf[32];
 extern u8 vram_buf[128];
@@ -109,6 +111,9 @@ void oam_clear(void);
 void __fastcall__ oam_spr(u8 x, u8 y, u8 tile, u8 attr);
 
 #define MSPR_END 128
+
+extern u8 oam_top;
+
 void __fastcall__ oam_meta_spr(u8 x, u8 y, const u8 *data, u8 flip);
 
 
