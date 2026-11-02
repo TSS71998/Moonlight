@@ -151,20 +151,27 @@ static void walk(void) {
     y = e_y[i];
     if (step) {
         if (e_left[i]) probe = e_x[i] - t->half_w - step;
-        else           probe = e_x[i] + t->half_w + step;
+        else           probe = e_x[i] + t->half_w - 1 + step;
         top = y - t->height;
-        if (level_solid_at(probe, y - 4) || level_solid_at(probe, top + (t->height >> 1))
-            || level_solid_at(probe, top + 2)) {
+        if (level_solid_at(probe, top + 2) || level_solid_at(probe, top + (t->height >> 1))) {
             e_left[i] ^= 1;
-        } else if (e_left[i]) {
-            e_x[i] -= step;
-        } else {
-            e_x[i] += step;
-        }
+            step = 0;
+        } else if (level_solid_at(probe, y - 4)) {
+            if (!e_fall[i] && !level_solid_at(probe, y - 12)) {
+                y -= 8;
+                e_y[i] = y;
+            } else {
+                e_left[i] ^= 1;
+                step = 0;
+            }
+        } 
+        if (e_left[i]) e_x[i] -= step;
+        else           e_x[i] += step;
     }
 
     if (!e_fall[i]) {
-        if (step && !level_solid_at(e_x[i] - 4, y) && !level_solid_at(e_x[i] + 3, y)) e_fall[i] = 1;
+        if (step && !level_solid_at(e_x[i] - t->half_w, y)
+                 && !level_solid_at(e_x[i] + t->half_w - 1, y)) e_fall[i] = 1;
     } else {
         y += e_fall[i];
         if (e_fall[i] < ENEMY_MAX_FALL) ++e_fall[i];
@@ -172,10 +179,11 @@ static void walk(void) {
             remove_enemy(i);
             return;
         }
-        if (level_solid_at(e_x[i] - 4, y - 1) || level_solid_at(e_x[i] + 3, y - 1)) {
+        if (level_solid_at(e_x[i] - t->half_w, y - 1)
+            || level_solid_at(e_x[i] + t->half_w - 1, y - 1)) {
             y = (y - 1) & 0xF8;
-            e_fall[i] = 0;
-        }
+             e_fall[i] = 0;
+         }
         e_y[i] = y;
     }
 }
