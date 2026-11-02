@@ -25,6 +25,7 @@
 #define PS_JUMP    3
 #define PS_FALL    4
 #define PS_ATTACK  5
+#define PS_HURT    6
 
 #define WALK_ANIM_DELAY  10
 
@@ -38,6 +39,11 @@
 #define SWORD_HB_X2      22
 #define SWORD_HB_Y1      (-19)
 #define SWORD_HB_Y2      (-13)
+
+#define PLAYER_MAX_HP    16
+#define HURT_VY          0x0280
+#define HURT_VX          1
+#define INVULN_TIME      90
 
 extern u8 player_attack_hit;
 extern u16 player_hit_x1, player_hit_x2;

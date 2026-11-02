@@ -56,43 +56,6 @@ void __fastcall__ pal_all(const u8 *pal) {
     pal_update = 1;
 }
 
-void oam_clear(void) {
-    memset(oam_buf, 0xFF, 256); /* Y = $FF puts a sprite off-screen */
-    oam_idx = 0;
-}
-
-void __fastcall__ oam_spr(u8 x, u8 y, u8 tile, u8 attr) {
-    u8 *s;
-    if (oam_idx == 0 && oam_buf[0] != 0xFF)
-        return; /* all 64 used */
-    s = &oam_buf[oam_idx];
-    s[0] = y - 1; /* sprites appear one line lower */
-    s[1] = tile;
-    s[2] = attr;
-    s[3] = x;
-    oam_idx += 4;
-}
-
-void __fastcall__ oam_meta_spr(u8 x, u8 y, const u8 *data, u8 flip) {
-    static const u8 *p;
-    static u8 dx;
-    static s16 sx, sy;
-
-    p = data;
-    while (p[0] != MSPR_END) {
-        dx = p[0];
-        if (flip) {
-            dx = (u8)(-8 - (s8)dx);
-        }
-        sx = (s16)x + (s8)dx;
-        sy = (s16)y + (s8)p[1];
-        if (sx >= 0 && sx < 256 && sy >= oam_top && sy < 240) {
-            oam_spr((u8)sx, (u8)sy, p[2] | 1, p[3] ^ flip);
-        }
-        p += 4;
-    }
-}
-
 void __fastcall__ banked_copy(u8 bank, void *dst, const void *src, u16 len) {
     u8 old = prg_bank;
     mmc1_set_prg_bank(bank);

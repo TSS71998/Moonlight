@@ -14,6 +14,11 @@ u8  player_state;
 
 static u16 spawn_x, spawn_y;
 
+u8 player_hp = PLAYER_MAX_HP;
+u8 player_invuln;
+u8 player_attack_id;
+u8 player_died;
+
 static u8 anim_frame;
 static u8 anim_timer;
 
@@ -61,6 +66,7 @@ static void __fastcall__ start_attack(u8 pad) {
     attack_phase = 0;
     attack_timer = attack_phases[0].frames;
     player_state = PS_ATTACK;
+    ++player_attack_id;
 }
 
 static void __fastcall__ update_attack(u8 pad) {
@@ -153,6 +159,8 @@ static void move_horizontal(s16 vx) {
     player_x = nx;
 }
 
+static void player_die(void);
+
 static void move_vertical(void) {
     static u16 ny;
     static u8 py, edge;
@@ -182,12 +190,46 @@ static void move_vertical(void) {
     player_y = ny;
 
     if (HI(player_y) >= 240 && HI(player_y) < 250) {
-        player_init(spawn_x, HI(spawn_y));
+        player_die();
     }
+}
+
+static void player_die(void) {
+    player_hp = PLAYER_MAX_HP;
+    player_attack_hit = 0;
+    player_died = 1;
+    player_init(spawn_x, HI(spawn_y));
+    player_invuln = INVULN_TIME;
+}
+
+void __fastcall__ player_hurt(u8 damage, u8 from_right) {
+    if (player_invuln || player_state == PS_HURT) return;
+    player_attack_hit = 0;
+    if (player_hp <= damage) {
+        player_hp = 0;
+        player_die();
+        return;
+    }
+    player_hp -= damage;
+    player_invuln = INVULN_TIME;
+    player_facing = from_right ? FACE_RIGHT : FACE_LEFT;
+    player_jump_vx = from_right ? -HURT_VX : HURT_VX;
+    player_vy = -HURT_VY;
+    player_on_ground = 0;
+    set_state(PS_HURT);
 }
 
 void __fastcall__ player_update(u8 pad, u8 pressed) {
     static s16 vx;
+
+    if (player_invuln) --player_invuln;
+
+    if (player_state == PS_HURT) {
+        if (player_jump_vx) move_horizontal(player_jump_vx);
+        move_vertical();
+        if (player_on_ground) set_state(PS_STAND);
+        return;
+    }
 
     if ((pressed & PAD_B) && player_state != PS_ATTACK) {
         start_attack(pad);
@@ -257,6 +299,8 @@ void player_draw(void) {
     static const AttackPhase *ph;
     static u8 ax, ay, flip;
     static u16 sx;
+
+    if (player_invuln && (frame_count & 4)) return;
 
     /* on screen? (while the camera catches up after a respawn it may not be) */
     sx = player_x - camera_x;

@@ -87,7 +87,7 @@ void __fastcall__ hud_add_score(u16 points) {
         else         { score[i] = d     ; d = 0; } 
     }
     if (d) {
-        for (i = 0; i < 5; ++i) score[i] = 9;
+        for (i = 0; i < 6; ++i) score[i] = 9;
     }
     dirty |= DIRTY_SCORE;
 }

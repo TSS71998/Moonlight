@@ -33,6 +33,8 @@ void __fastcall__ level_draw(u16 cam_x);
 
 void __fastcall__ camera_update(u16 target);
 
+void __fastcall__ camera_snap(u16 target);
+
 u8 __fastcall__ level_solid_at(u16 x, u8 y);
 
 #endif

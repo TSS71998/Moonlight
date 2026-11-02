@@ -3,6 +3,7 @@
 #include "levels.h"
 #include "player.h"
 #include "hud.h"
+#include "enemy.h"
 
 static const u8 palette[32] = {
     /* background */
@@ -41,19 +42,27 @@ void main(void) {
         pad_prev = pad;
 
         player_update(pad, pressed);
+        eneimes_update();
+        if (player_died) {
+            player_died = 0;
+            enemies_rest();
+            ppu_off();
+            camera_snap(player_x + PLAYER_WIDTH / 2);
+            oam_clear();
+            hud_sprite0();
+            ppu_on();
+            ppu_mask |= 0x60;
+            continue;
+        }
         camera_update(player_x + PLAYER_WIDTH / 2);
 
-        //TESTING SCORE
-        if (pressed & PAD_SELECT) {
-            hud_add_score(150);
-            hud_set_player_hp(hud_player_hp ? hud_player_hp - 1 : HUD_BAR_LEN);
-            hud_set_enemy_hp(hud_enemy_hp >= 3 ? hud_enemy_hp - 3 : HUD_BAR_LEN);
-        }
+        hud_set_player_hp(player_hp);
         hud_update();
 
         oam_clear();
         hud_sprite0();
         player_draw();
+        eneimes_update();
 
         ppu_wait_nmi();
     }

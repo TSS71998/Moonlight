@@ -11,16 +11,14 @@ u16 camera_x;
 
 #pragma bss-name(push, "WRAM")
 static u8 level_map[MAX_SCREENS * ROOM_W * ROOM_H];
-static u8 mt_info[256];
+u8 mt_info[256];
 #pragma bss-name(pop)
 
-static u8 *screen_ptr[MAX_SCREENS];
+u8 *screen_ptr[MAX_SCREENS];
 static u16 level_cols;
-static u16 cam_col;
+static u16 cam_tile;
 static const u8 *cur_mt_tiles;
 static u8 cur_bank;
-
-static const u8 quarter_bit[4] = { 0x10, 0x20, 0x40, 0x80 };
 
 void __fastcall__ level_load(u8 bank, const LevelDef *lvl) {
     static LevelDef def;
@@ -42,59 +40,57 @@ void __fastcall__ level_load(u8 bank, const LevelDef *lvl) {
     cur_bank = bank;
 }
 
-/* Queue metatile column q_col for the next vblank, built straight into
-   vram_buf: two 26-tile columns (58 bytes) and, if q_attrs is set, the
-   7 attribute bytes below the HUD (28 more). Attributes cover a 32 px pair
-   of columns, so they're only needed with the first column of a pair that
-   comes into view. Arguments are globals and everything is static: cc65's
-   argument stack is slow, and this runs in the middle of a frame. */
-static u16 q_col;
+/* Queue 8 px tile column q_tcol of the level (two per metatile column)
+   for the next vblank, built straight into vram_buf: 26 tiles below the
+   HUD (29 bytes) and, if q_attrs is set, the 7 attribute bytes of its
+   32 px group (28 more). Writing half a metatile column at a time keeps
+   the work per frame small: the camera crosses at most one 8 px column a
+   frame. Attributes cover 4 tile columns, so they're only written with the
+   first column of a group that comes into view. Arguments are globals and
+   everything is static: cc65's argument stack is slow. */
+static u16 q_tcol;
 static u8 q_attrs;
 
-static void __fastcall__ queue_column(void) {
-    static const u8 *p, *pe;
+static void queue_tile_column(void) {
+    static const u8 *p;
     static const u8 *mt;
-    static u8 r, n, nl, nr, t, v, old_bank, slot;
-    static u16 adr, even;
+    static u8 r, n, t, v, half, old_bank, slot;
+    static u16 adr, mcol;
 
-    if (q_col >= level_cols) return;
+    mcol = q_tcol >> 1;                 /* metatile column */
+    if (mcol >= level_cols) return;
+    half = (u8)q_tcol & 1;              /* 0 = its left tiles, 1 = right */
 
-    slot = (u8)(q_col << 1) & 63;
+    slot = (u8)q_tcol & 63;             /* tile column in the 64-wide ring */
     adr = ((slot & 32) ? 0x2400 : 0x2000) + (slot & 31) + TOP_ROW * 32;
 
+    /* one entry: [addr | VRAM_DOWN, len, tiles...] */
     n = vram_buf_len;
-    nl = n + 3;
-    nr = nl + COL_LEN + 3;
     vram_buf[n] = (u8)(adr >> 8) | (VRAM_DOWN >> 8);
     vram_buf[n + 1] = (u8)adr;
     vram_buf[n + 2] = COL_LEN;
-    ++adr;
-    vram_buf[nr - 3] = (u8)(adr >> 8) | (VRAM_DOWN >> 8);
-    vram_buf[nr - 2] = (u8)adr;
-    vram_buf[nr - 1] = COL_LEN;
+    n += 3;
 
-    p = screen_ptr[q_col >> 4] + (q_col & 15) + (TOP_ROW / 2) * ROOM_W;
+    /* tiles: read the metatile table straight from its bank */
+    p = screen_ptr[mcol >> 4] + ((u8)mcol & 15) + (TOP_ROW / 2) * ROOM_W;
     old_bank = prg_bank;
     mmc1_set_prg_bank(cur_bank);
     for (r = ROOM_H - TOP_ROW / 2; r; --r) {
-        mt = cur_mt_tiles + ((u16)*p << 2);
-        t = mt[0]; vram_buf[nl] = t; ++nl;     /* TL */
-        t = mt[2]; vram_buf[nl] = t; ++nl;     /* BL */
-        t = mt[1]; vram_buf[nr] = t; ++nr;     /* TR */
-        t = mt[3]; vram_buf[nr] = t; ++nr;     /* BR */
+        mt = cur_mt_tiles + ((u16)*p << 2) + half;
+        t = mt[0]; vram_buf[n] = t; ++n;
+        t = mt[2]; vram_buf[n] = t; ++n;
         p += ROOM_W;
     }
     mmc1_set_prg_bank(old_bank);
-    n = nr;
 
     if (q_attrs) {
-        even = q_col & ~1;
-        p = screen_ptr[even >> 4] + (even & 15) + TOP_ATTR * 2 * ROOM_W;
+        mcol &= ~1;
+        p = screen_ptr[mcol >> 4] + ((u8)mcol & 15) + TOP_ATTR * 2 * ROOM_W;
         adr = ((slot & 32) ? 0x27C0 : 0x23C0) + ((slot & 31) >> 2) + TOP_ATTR * 8;
         for (r = TOP_ATTR; r < 8; ++r) {
             t = p[0]; v = mt_info[t] & 3;
             t = p[1]; v |= (mt_info[t] & 3) << 2;
-            if (r < 7) {    /* the last row of bytes has only its top half */
+            if (r < 7) {
                 t = p[ROOM_W];     v |= (mt_info[t] & 3) << 4;
                 t = p[ROOM_W + 1]; v |= (mt_info[t] & 3) << 6;
             }
@@ -129,52 +125,56 @@ static void set_scroll(void) {
 }
 
 void __fastcall__ level_draw(u16 cam_x) {
-    static u16 c, first;
-    static u8 i, a;
+    static u16 first;
+    static u8 i;
 
     camera_x = cam_x;
-    cam_col = cam_x >> 4;
+    cam_tile = cam_x >> 3;
 
-    first = cam_col > 14 ? cam_col - 14 : 0;
+    first = (cam_x >> 4) << 1;
+    first = first > 28 ? first - 28 : 0;
     flush_vram_buf();
     q_attrs = 1;
-    for (i = 0; i < 32; ++i) {
-        q_col = first + 1;
-        queue_column();
+    for (i = 0; i < 64; ++i) {
+        q_tcol = first + i;
+        queue_tile_column();
         flush_vram_buf();
     }
     set_scroll();
 }
 
-void __fastcall__ camera_update(u16 target) {
-    static u16 want, new_col;
+static u16 want;
 
+static void __fastcall__ camera_want(u16 target) {
     want = target > 128 ? target - 128 : 0;
     if (want > level_width - 256) want = level_width - 256;
+}
+
+void __fastcall__ camera_snap(u16 target) {
+    camera_want(target);
+    level_draw(want);
+}
+
+void __fastcall__ camera_update(u16 target) {
+    static u16 new_tile;
+
+    camera_want(target);
     if (want > camera_x) camera_x += (want - camera_x > 8) ? 8 : want - camera_x;
     else if (want < camera_x) camera_x -= (camera_x - want > 8) ? 8 : camera_x - want;
 
-    new_col = camera_x >> 4;
-    if (new_col > cam_col) {
-        cam_col = new_col;
-        q_col = cam_col + 17;
-        q_attrs = !(q_col & 1);
-        queue_column();
-    } else if (new_col < cam_col) {
-        cam_col = new_col;
-        if (cam_col) {
-            q_col = cam_col - 1;
-            q_attrs = q_col & 1;
-            queue_column();
+    new_tile = camera_x >> 3;
+    if (new_tile > cam_tile) {
+        cam_tile = new_tile;
+        q_tcol = cam_tile + 34;
+        q_attrs = !(q_tcol & 3);
+        queue_tile_column();
+    } else if (new_tile < cam_tile) {
+        cam_tile = new_tile;
+        if (cam_tile >= 2) {
+            q_tcol = cam_tile - 2;
+            q_attrs = (q_tcol & 3) == 3;
+            queue_tile_column();
         }
     }
     set_scroll();
-}
-
-u8 __fastcall__ level_solid_at(u16 x, u8 y) {
-    if (y >= 240) return 0;
-    if (x >= level_width) return 1;
-
-    return mt_info[screen_ptr[x >> 8][(y & 0xF0) | ((u8)x >> 4)]]
-        & quarter_bit[((y >> 2) & 2) | ((x >> 3) & 1)];
 }

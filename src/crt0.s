@@ -290,7 +290,7 @@ nmi:
     ldx #4
 @wait_hit:
     bit PPUSTATUS
-    bvc @split
+    bvs @split
     dey
     bne @wait_hit
     dex
