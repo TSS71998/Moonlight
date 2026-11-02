@@ -57,10 +57,17 @@ extern u8  player_facing;
 extern u8  player_on_ground;
 extern u8  player_state;
 
+extern u8  player_hp;
+extern u8  player_invuln;
+extern u8  player_attack_id;
+extern u8  player_died;
+
 void __fastcall__ player_init(u16 x, u8 y);
 
 void __fastcall__ player_update(u8 pad, u8 pressed);
 
 void player_draw(void);
+
+void __fastcall__ player_hurt(u8 damage, u8 from_right);
 
 #endif

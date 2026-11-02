@@ -22,7 +22,7 @@ void __fastcall__ enemies_load(const EnemySpawn *list);
 
 void enemies_reset(void);
 
-void eneimes_update(void);
+void enemies_update(void);
 
 void enemies_draw(void);
 

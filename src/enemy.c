@@ -130,7 +130,7 @@ static void check_spawns(void) {
         f = sp_flags[s];
         if (x >= lo && x < hi) {
             if (!(f & SF_IN_VIEW)) {
-                if ((f & (SF_ALIVE | SF_ALIVE)) || spawn(s)) {
+                if ((f & (SF_ALIVE | SF_KILLED)) || spawn(s)) {
                     sp_flags[s] |= SF_IN_VIEW;
                 }
             }
@@ -151,7 +151,7 @@ static void walk(void) {
     y = e_y[i];
     if (step) {
         if (e_left[i]) probe = e_x[i] - t->half_w - step;
-        else           probe = e_x[i] - t->half_w + step;
+        else           probe = e_x[i] + t->half_w + step;
         top = y - t->height;
         if (level_solid_at(probe, y - 4) || level_solid_at(probe, top + (t->height >> 1))
             || level_solid_at(probe, top + 2)) {
@@ -227,9 +227,8 @@ static void fight(void) {
     }
 }
 
-
 void enemies_update(void) {
-    if (frame_count & 1) check_spawns;
+    if (frame_count & 1) check_spawns();
 
     for (i = frame_count & 1; i < MAX_ENEMIES; i += 2) {
         if (e_state[i] == ES_FREE) continue;
@@ -253,7 +252,7 @@ void enemies_update(void) {
 
             if (e_timer[i] <= 2) {
                 e_timer[i] = t->anim_delay;
-                e_timer[i] ^= 1;
+                e_frame[i] ^= 1;
             } else {
                 e_timer[i] -= 2;
             }

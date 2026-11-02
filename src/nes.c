@@ -1,10 +1,5 @@
-/* nes.c - small runtime library: frame sync, VRAM, palettes, sprites, banking.
-   Written in C to keep it readable; move hot paths to assembly later. */
 #include "nes.h"
 #include <string.h>
-
-static u8 oam_idx;
-u8 oam_top;
 
 void ppu_wait_nmi(void) {
     nmi_ready = 1;
@@ -43,7 +38,7 @@ void __fastcall__ vram_write(const u8 *src, u16 len) {
 void __fastcall__ vram_buf_put(u16 adr, const u8 *src, u8 len) {
     u8 i = vram_buf_len;
     if ((u16)i + len + 3 > sizeof(vram_buf))
-    return; /* full: drop it */
+    return;
     vram_buf[i++] = adr >> 8;
     vram_buf[i++] = (u8)adr;
     vram_buf[i++] = len;

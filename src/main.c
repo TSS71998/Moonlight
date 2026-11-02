@@ -26,6 +26,7 @@ void main(void) {
 
     pal_all(palette);
     level_load(LEVEL_BANK, &lvl_forest);
+    enemies_load(forest_spawns);
 
     player_init(120, 160);
     scroll_y = 0;
@@ -42,10 +43,10 @@ void main(void) {
         pad_prev = pad;
 
         player_update(pad, pressed);
-        eneimes_update();
+        enemies_update();
         if (player_died) {
             player_died = 0;
-            enemies_rest();
+            enemies_reset();
             ppu_off();
             camera_snap(player_x + PLAYER_WIDTH / 2);
             oam_clear();
@@ -62,7 +63,7 @@ void main(void) {
         oam_clear();
         hud_sprite0();
         player_draw();
-        eneimes_update();
+        enemies_draw();
 
         ppu_wait_nmi();
     }
