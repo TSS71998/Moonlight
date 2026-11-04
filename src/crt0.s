@@ -331,4 +331,5 @@ irq:
 .segment "CHARS"
     .incbin "chr/bg.chr"        ; CHR bank 0 (4 KB): background tiles
     .incbin "chr/sprites.chr"   ; CHR bank 1 (4 KB): sprite tiles
-    ; the remaining 24 KB (banks 2-7) is left empty for later graphics
+    .incbin "chr/title.chr"     ; CHR bank 2 (4 KB): title screen tiles (title.c)
+    ; the remaining 20 KB (banks 3-7) is left empty for later graphics

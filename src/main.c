@@ -4,6 +4,7 @@
 #include "player.h"
 #include "hud.h"
 #include "enemy.h"
+#include "title.h"
 
 static const u8 palette[32] = {
     /* background */
@@ -18,11 +19,10 @@ static const u8 palette[32] = {
     0x0F, 0x16, 0x27, 0x37,
 };
 
-void main(void) {
+static void play_game(void) {
     static u8 pad, pad_prev, pressed;
 
     ppu_off();
-    ppu_ctrl = CTRL_NMI | CTRL_SPR_8X16;
 
     pal_all(palette);
     level_load(LEVEL_BANK, &lvl_forest);
@@ -66,5 +66,13 @@ void main(void) {
         enemies_draw();
 
         ppu_wait_nmi();
+    }
+}
+
+void main(void) {
+    ppu_ctrl = CTRL_NMI | CTRL_SPR_8X16;
+    for (;;) {
+        title_screen();
+        play_game();
     }
 }

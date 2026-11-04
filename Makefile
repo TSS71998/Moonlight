@@ -15,7 +15,7 @@ BUILD   := build
 C_SRC   := $(wildcard src/*.c)
 S_SRC   := $(wildcard src/*.s)
 OBJS    := $(C_SRC:src/%.c=$(BUILD)/%.o) $(S_SRC:src/%.s=$(BUILD)/%.o) $(BUILD)/levels.o
-CHR     := chr/bg.chr chr/sprites.chr
+CHR     := chr/bg.chr chr/sprites.chr chr/title.chr
 SCREENS := $(wildcard levels/*.nam)
 
 # cc65 2.20+ renamed the C stack pointer from `sp` to `c_sp`; detect which.
@@ -55,6 +55,8 @@ $(BUILD)/main.o: $(BUILD)/levels.h
 
 # CHR files come from NEXXT; rebuild when they change
 $(BUILD)/crt0.o: $(CHR)
+
+$(BUILD)/title_data.o: title/title.nam title/title.pal
 
 $(BUILD):
 	mkdir -p $(BUILD)
