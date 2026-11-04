@@ -25,12 +25,12 @@ typedef struct {
 } EnemyType;
 
 static const EnemyType enemy_types[] = {
-    { skele_walk1,  skele_walk2,   BEH_WALK,   8,  16, 5, 30, 2,  8,  2,  2,  100 },
-    { bat_fly1,     bat_fly2,       BEH_FLY,   20,   6, 6, 12, 1, 16,  2,  3,  200 },
+    { skele_walk1,  skele_walk2,   BEH_WALK,   8,  16, 5, 30, 2,  8,  2,  1,  100 },
+    { bat_fly1,     bat_fly2,       BEH_FLY,   18,  8, 6, 12, 1, 16,  2,  2,  200 },
 };
 
 #define FLAME_FRAME_TIME 6
-#define FLAME_PAL        1
+#define FLAME_PAL        3
 static const u8 *const flame_frames[3] = { flame3, flame2, flame1 };
 
 static const s8 wave[16] = { 0, 4, 7, 9, 10, 9, 7, 4, 0, -4, -7, -9, -10, -9, -7, -4 };

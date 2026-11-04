@@ -295,7 +295,7 @@ nmi:
     bne @wait_hit
     dex
     bne @wait_hit
-    jmp @no_split
+    jmp @split_failed
 @split:
     ; mid-frame only the horizontal scroll (x and the nametable bit) can be
     ; changed with these two writes; the PPU picks them up at the end of
@@ -304,6 +304,15 @@ nmi:
     sta PPUCTRL
     lda split_x
     sta PPUSCROLL
+    jmp @no_split
+@split_failed:
+    ; Sprite 0 never hit: its pixel (tile $50 of chr/sprites.chr) or the
+    ; long-stemmed "E" (tile $C5 of chr/bg.chr) is missing. Turn the split
+    ; off, so the level keeps scrolling (with the HUD scrolling along, which
+    ; makes the cause easy to spot) instead of the whole screen staying
+    ; still at scroll 0 while the game moves on underneath.
+    lda #0
+    sta _hud_split
 @no_split:
     pla
     tay
