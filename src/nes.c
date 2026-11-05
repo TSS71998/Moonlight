@@ -1,10 +1,12 @@
 #include "nes.h"
+#include "audio.h"
 #include <string.h>
 
 void ppu_wait_nmi(void) {
     nmi_ready = 1;
     while (nmi_ready) {
     } /* NMI clears it when done */
+    audio_update();
 }
 
 void ppu_on(void) {
@@ -28,11 +30,6 @@ void __fastcall__ vram_put(u8 value) { PPUDATA = value; }
 void __fastcall__ vram_fill(u8 value, u16 len) {
     while (len--)
         PPUDATA = value;
-}
-
-void __fastcall__ vram_write(const u8 *src, u16 len) {
-    while (len--)
-        PPUDATA = *src++;
 }
 
 void __fastcall__ vram_buf_put(u16 adr, const u8 *src, u8 len) {

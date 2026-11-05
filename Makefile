@@ -20,7 +20,7 @@ SCREENS := $(wildcard levels/*.nam)
 
 # cc65 2.20+ renamed the C stack pointer from `sp` to `c_sp`; detect which.
 HAS_C_SP := $(shell mkdir -p $(BUILD) && printf '.include "zeropage.inc"\nlda c_sp\n' > $(BUILD)/spcheck.s && $(CA65) $(BUILD)/spcheck.s -o $(BUILD)/spcheck.o 2>/dev/null && echo yes)
-ASFLAGS  := -g $(if $(HAS_C_SP),-D CC65_C_SP)
+ASFLAGS  := -g $(if $(HAS_C_SP),-D CC65_C_SP) --bin-include-dir audio
 
 .PHONY: all run clean
 
@@ -57,6 +57,9 @@ $(BUILD)/main.o: $(BUILD)/levels.h
 $(BUILD)/crt0.o: $(CHR)
 
 $(BUILD)/title_data.o: title/title.nam title/title.pal
+
+$(BUILD)/audio_data.o: audio/music.s audio/sfx.s
+$(BUILD)/audio_engine.o: audio/famistudio_ca65.s
 
 $(BUILD):
 	mkdir -p $(BUILD)

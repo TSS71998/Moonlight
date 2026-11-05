@@ -5,6 +5,7 @@
 #include "hud.h"
 #include "enemy.h"
 #include "title.h"
+#include "audio.h"
 
 static const u8 palette[32] = {
     /* background */
@@ -34,6 +35,7 @@ static void play_game(void) {
     hud_init();
     oam_clear();
     hud_sprite0();
+    music_play(SONG_STAGE);
     ppu_on();
     ppu_mask |= 0x60; 
 
@@ -47,8 +49,10 @@ static void play_game(void) {
         if (player_died) {
             player_died = 0;
             enemies_reset();
+            audio_silence();
             ppu_off();
             camera_snap(player_x + PLAYER_WIDTH / 2);
+            music_play(SONG_STAGE);
             oam_clear();
             hud_sprite0();
             ppu_on();
@@ -71,6 +75,7 @@ static void play_game(void) {
 
 void main(void) {
     ppu_ctrl = CTRL_NMI | CTRL_SPR_8X16;
+    audio_init();
     for (;;) {
         title_screen();
         play_game();

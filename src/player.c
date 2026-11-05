@@ -1,6 +1,7 @@
 #include "player.h"
 #include "level.h"
 #include "hero_sprites.h"
+#include "audio.h"
 
 #define HI(v) ((u8)((v) >> 8))
 
@@ -66,6 +67,7 @@ static void __fastcall__ start_attack(u8 pad) {
     attack_phase = 0;
     attack_timer = attack_phases[0].frames;
     player_state = PS_ATTACK;
+    sfx_play(SFX_SWING, SFX_PLAYER);
     ++player_attack_id;
 }
 
@@ -211,6 +213,7 @@ void __fastcall__ player_hurt(u8 damage, u8 from_right) {
         return;
     }
     player_hp -= damage;
+    sfx_play(SFX_HURT, SFX_PLAYER);
     player_invuln = INVULN_TIME;
     player_facing = from_right ? FACE_RIGHT : FACE_LEFT;
     player_jump_vx = from_right ? -HURT_VX : HURT_VX;
@@ -254,6 +257,7 @@ void __fastcall__ player_update(u8 pad, u8 pressed) {
             player_jump_vx = vx > 0 ? JUMP_SPEED : vx < 0 ? -JUMP_SPEED : 0;
             player_on_ground = 0;
             set_state(PS_JUMP);
+            sfx_play(SFX_JUMP, SFX_PLAYER);
         }
     } else {
         vx = player_jump_vx;

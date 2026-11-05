@@ -22,7 +22,7 @@
 
 .exportzp _frame_count, _nmi_ready, _ppu_ctrl, _ppu_mask
 .exportzp _scroll_x, _scroll_y, _pal_update, _vram_buf_len, _hud_split
-.export   _pal_buf, _vram_buf
+.export   _pal_buf, _vram_buf, _vram_buf_flush
 
 PPUCTRL   = $2000
 PPUMASK   = $2001
@@ -195,40 +195,7 @@ nmi:
     lda #0
     sta _pal_update
 @no_pal:
-
-    ; VRAM update buffer: entries of [addr hi, addr lo, length, bytes...]
-    ldx #0
-@vram_entry:
-    cpx _vram_buf_len
-    bcs @vram_done
-    lda _ppu_ctrl
-    and #%11111011          ; +1 per byte...
-    ldy _vram_buf,x
-    bpl @vram_across
-    ora #%00000100    
-@vram_across:
-    sta PPUCTRL
-    bit PPUSTATUS
-    lda _vram_buf,x
-    and #$3F
-    sta PPUADDR
-    inx
-    lda _vram_buf,x
-    sta PPUADDR
-    inx
-    ldy _vram_buf,x         ; length
-    inx
-@vram_byte:
-    lda _vram_buf,x
-    sta PPUDATA
-    inx
-    dey
-    bne @vram_byte
-    jmp @vram_entry
-@vram_done:
-    lda #0
-    sta _vram_buf_len
-
+    jsr _vram_buf_flush
     ; scroll and control registers must come after all PPUADDR writes
     bit PPUSTATUS
     lda _scroll_x
@@ -321,6 +288,41 @@ nmi:
     pla
 irq:
     rti
+_vram_buf_flush:
+    ldx #0
+@entry:
+    cpx _vram_buf_len
+    bcs @done
+    lda _ppu_ctrl
+    and #%11111011          ; +1 per byte...
+    ldy _vram_buf,x
+    bpl @across
+    ora #%00000100          ; ...or +32 for a column
+@across:
+    sta PPUCTRL
+    bit PPUSTATUS
+    lda _vram_buf,x
+    and #$3F                ; drop the flag: PPU addresses are 14 bits
+    sta PPUADDR
+    inx
+    lda _vram_buf,x
+    sta PPUADDR
+    inx
+    ldy _vram_buf,x         ; length
+    inx
+@byte:
+    lda _vram_buf,x
+    sta PPUDATA
+    inx
+    dey
+    bne @byte
+    jmp @entry
+@done:
+    lda #0
+    sta _vram_buf_len
+    lda _ppu_ctrl           ; back to +1 per byte
+    sta PPUCTRL
+    rts
 
 ; ---------------------------------------------------------------------------
 ; OAM buffer (page $0200) and CHR-ROM

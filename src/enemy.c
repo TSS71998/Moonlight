@@ -3,6 +3,7 @@
 #include "level.h"
 #include "player.h"
 #include "hud.h"
+#include "audio.h"
 
 #define HI(v) ((u8)((v) >> 8))
 
@@ -200,6 +201,7 @@ static void kill(void) {
     e_timer[i] = FLAME_FRAME_TIME * 3;
     sp_flags[e_spawn[i]] |= SF_KILLED;
     hud_add_score(t->points);
+    sfx_play(SFX_ENEMY_DIE, SFX_WORLD);
 }
 
 static void fight(void) {
@@ -226,6 +228,7 @@ static void fight(void) {
             return;
         }
         e_hurt[i] = ENEMY_HURT_TIME;
+        sfx_play(SFX_HIT, SFX_WORLD);
     }
 
     if (!player_invuln && player_state != PS_HURT

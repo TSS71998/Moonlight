@@ -105,20 +105,6 @@ static void queue_tile_column(void) {
     vram_buf_len = n;
 }
 
-static void flush_vram_buf(void) {
-    static u8 i, len;
-    i = 0;
-    while (i < vram_buf_len) {
-        PPUCTRL = (vram_buf[i] & 0x80) ? (ppu_ctrl | CTRL_INC_32) : (ppu_ctrl & ~CTRL_INC_32);
-        vram_adr(((u16)(vram_buf[i] & 0x3F) << 8) | vram_buf[i + 1]);
-        len = vram_buf[i + 2];
-        i += 3;
-        while (len--) PPUDATA = vram_buf[i++];
-    }
-    PPUCTRL = ppu_ctrl;
-    vram_buf_len = 0;
-}
-
 static void set_scroll(void) {
     scroll_x = (u8)camera_x;
     ppu_ctrl = (ppu_ctrl & ~CTRL_NT_2400) | ((u8)(camera_x >> 8) & 1);
@@ -131,15 +117,14 @@ void __fastcall__ level_draw(u16 cam_x) {
     camera_x = cam_x;
     cam_tile = cam_x >> 3;
 
-    first = (cam_x >> 4) << 1;
-    first = first > 28 ? first - 28 : 0;
-    flush_vram_buf();
-    q_attrs = 1;
-    for (i = 0; i < 64; ++i) {
+    first = cam_tile > 2 ? cam_tile - 2 : 0;
+    vram_buf_flush();
+    for (i = 0; i < 37; ++i) {
         q_tcol = first + i;
+        q_attrs = !i || !(q_tcol & 3);
         queue_tile_column();
-        flush_vram_buf();
-    }
+        vram_buf_flush();
+     }
     set_scroll();
 }
 
