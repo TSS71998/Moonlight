@@ -6,12 +6,13 @@
 #define SONG_TITLE 0
 #define SONG_STAGE 1
 
-#define SFX_SWING     0
+
+#define SFX_ENEMY_DIE 0
 #define SFX_HIT       1
-#define SFX_ENEMY_DIE 2
-#define SFX_HURT      3
-#define SFX_JUMP      4
-#define SFX_START     5
+#define SFX_HURT      2
+#define SFX_JUMP      3
+#define SFX_START     4
+#define SFX_SWING     5
 
 #define SFX_PLAYER 0
 #define SFX_WORLD  1

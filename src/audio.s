@@ -21,6 +21,8 @@ AUDIO_BANK = 2
 
 .segment "ZEROPAGE"
 audio_ready: .res 1         ; nonzero once audio_init has run
+song_count:  .res 1
+sfx_count:   .res 1
 
 .segment "CODE"
 
@@ -49,6 +51,31 @@ _audio_init:
     ldx #<audio_sfx
     ldy #>audio_sfx
     jsr famistudio_sfx_init
+
+    ; Count the songs and effects that were exported, so music_play and
+    ; sfx_play can ignore numbers past the end. (Asking the engine for one
+    ; that isn't there makes it play whatever bytes follow as music, which
+    ; can hang or crash the game.)
+    lda audio_music
+    sta song_count
+    lda audio_sfx
+    sta ptr1
+    lda audio_sfx+1
+    sta ptr1+1
+    ldy #0
+    lda (ptr1),y
+    sec
+    sbc ptr1
+    tax
+    iny
+    lda (ptr1),y
+    sbc ptr1+1
+    beq @count_ok
+    ldx #$FE               ; doesn't look like a table: allow all
+@count_ok:
+    txa
+    lsr a
+    sta sfx_count
     lda #1
     sta audio_ready
     BANK_OUT_RTS
@@ -66,11 +93,15 @@ _audio_update:
 
 ; void __fastcall__ music_play(u8 song)
 _music_play:
+    cmp song_count
+    bcs @none
     sta tmp1
     BANK_IN
     lda tmp1
     jsr famistudio_music_play
     BANK_OUT_RTS
+@none:
+    rts
 
 ; void music_stop(void)
 _music_stop:
@@ -102,6 +133,8 @@ _sfx_play:
     tax
     ldy #0
     lda (C_SP),y
+    cmp sfx_count
+    bcs @skip
     sta tmp1                ; sfx number
     lda #FAMISTUDIO_SFX_CH0
     cpx #0
@@ -115,4 +148,6 @@ _sfx_play:
     jsr famistudio_sfx_play
     pla
     jsr _mmc1_set_prg_bank
+    jmp incsp1
+@skip:
     jmp incsp1
