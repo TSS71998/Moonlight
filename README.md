@@ -1,88 +1,89 @@
-# Moonlight
+<p align="center">
+  <img src="docs/logo.svg" alt="Moonlight Sorrow" width="560">
+</p>
 
-An NES game in C (cc65) on an MMC1 cartridge. This is the project setup: the
-runtime, banking and build are in place, and `main.c` runs a test screen drawn
-in NEXXT where the knight walks, jumps, crouches and attacks with a sword.
+<p align="center">
+  <b>A gothic action platformer for the NES, in the spirit of the classic Castlevania games.</b>
+</p>
 
-## Requirements
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-NES-c41e3a" alt="Platform: NES">
+  <img src="https://img.shields.io/badge/cartridge-MMC1-3a4a8a" alt="Cartridge: MMC1">
+  <img src="https://img.shields.io/badge/made%20with-C%20%2B%206502%20assembly-555555" alt="Made with C and 6502 assembly">
+  <img src="https://img.shields.io/badge/status-in%20development-d4a017" alt="Status: in development">
+</p>
 
-- **cc65** (2.19 or newer): `sudo apt install cc65`, `brew install cc65`, or
-  the Windows snapshot from cc65.github.io
-- **make** and a normal C compiler (`gcc`, `clang` or `cc`; on WSL/Ubuntu:
-  `sudo apt install gcc`). It builds `tools/nam2level.c`, the level converter;
-  set `HOSTCC=` to use a different compiler.
+## About
 
-## Build and run
+**Moonlight Sorrow** is a homebrew game for the Nintendo Entertainment System.
+Take up your sword and make your way through a moonlit forest where skeletons
+walk and bats circle in the dark.
 
-```
-make                 # -> build/game.nes
-make run             # builds, then runs it in ../NES-Emulator (set EMU=path to change)
-make clean
-```
+It's a real NES game, made the way games were made for the console: it runs in
+any NES emulator, and it's built for the same MMC1 cartridge chip used by
+classics like *The Legend of Zelda* and *Metroid*.
 
-The build also writes `build/game.dbg` (load it in Mesen's debugger for
-source-level C debugging) and `build/map.txt` (how full each bank is).
+## Features
 
-## Cartridge layout (MMC1 / mapper 1)
+- **Sword combat**: strike standing or crouching, and time your swings, since
+  every enemy has to be in reach.
+- **Classic movement**: deliberate, committed jumps and a hard knockback when
+  you take a hit, just like the games that inspired it.
+- **A scrolling forest stage**, drawn tile by tile in pixel art.
+- **Enemies**: skeletons that close in along the ground and bats that swoop
+  through the trees.
+- **A classic status bar** with your score, your health and the health of the
+  last enemy you struck.
+- **An original chiptune soundtrack** and sound effects, written for the NES's
+  own sound chip.
 
-| Memory | Size | Contents |
-|---|---|---|
-| PRG bank 0–6 | 16 KB each, swapped in at `$8000` | Level data, music, extra code (`BANK0`–`BANK6` segments) |
-| PRG bank 7 | 16 KB, fixed at `$C000` | All C code, runtime, NMI, vectors |
-| CHR bank 0 | 4 KB at PPU `$0000` | Background tiles |
-| CHR bank 1 | 4 KB at PPU `$1000` | Sprite tiles |
-| CHR banks 2–7 | 24 KB | Free, for more tile sets (swap with `mmc1_set_chr0/1`) |
-| PRG-RAM | 8 KB at `$6000` | `WRAM` segment (battery saves later) |
-| RAM | `$0200` OAM buffer, `$0300–$06FF` variables, `$0700–$07FF` C stack | |
+## Screenshots
 
-Mirroring is vertical, which suits horizontal scrolling.
+| Title screen | In the forest |
+|:---:|:---:|
+| <img src="docs/title.png" alt="Title screen" width="384"> | <img src="docs/combat.png" alt="The knight's sword strikes a skeleton" width="384"> |
 
-## Files
+## Controls
 
-| File | Purpose |
+| Button | Action |
 |---|---|
-| `src/crt0.s` | iNES header, reset stubs in every bank, hardware init, C runtime start, NMI handler |
-| `src/mmc1.s` | MMC1 register writes (`mmc1_set_prg_bank`, `mmc1_set_chr0/1`, `mmc1_set_control`) |
-| `src/pad.s` | Controller reading |
-| `src/nes.h` / `src/nes.c` | Registers, frame sync, VRAM, palette, sprite, metasprite and banked-copy helpers |
-| `src/level.h` / `src/level.c` | Loads converted screens from their bank, draws them, `level_solid_at` |
-| `src/player.h` / `src/player.c` | Movement, animation states and the sword attack (tuning constants in `player.h`) |
-| `src/hero_sprites.h` / `src/hero_sprites.c` | The knight's frames and the sword pieces, as metasprites |
-| `levels/*.nam`, `levels/*.pal` | Screens and their background palettes, saved from NEXXT |
-| `levels/collision.txt` | Which background tiles are solid |
-| `src/main.c` | Setup and the main loop |
-| `cfg/mmc1.cfg` | Linker layout of the banks |
-| `tools/nam2level.c` | Converts `levels/*.nam` into metatiles and rooms (`build/levels.c`/`.h`); built and run by `make` |
+| D-pad left / right | Walk |
+| D-pad down | Crouch |
+| A | Jump |
+| B | Attack (hold down to attack while crouching) |
+| Start or Select | Start the game from the title screen |
 
-## How a frame works
+## Play it
 
-1. Your C code updates the game, calls `oam_clear()` and `oam_spr()` for sprites,
-   and queues tile changes with `vram_buf_put()`.
-2. `ppu_wait_nmi()` waits for vblank. The NMI then DMAs sprites, uploads the
-   palette (if `pal_all()` was called), applies queued tile writes, and sets
-   scroll and `PPUCTRL`/`PPUMASK` from `scroll_x`, `scroll_y`, `ppu_ctrl`, `ppu_mask`.
+Moonlight Sorrow is in development and builds from source:
 
-For big VRAM writes, such as loading a level, call `ppu_off()`, write directly
-with `vram_adr()`/`vram_put()`, then `ppu_on()`.
+1. Install [cc65](https://cc65.github.io) and `make`.
+2. Run `make` in this folder. You get `build/moonlight.nes`.
+3. Open it in an NES emulator, such as [Mesen](https://www.mesen.ca), or
+   [NES-Emulator](https://github.com/TSS71998/NES-Emulator), the emulator I wrote
+   alongside this game.
 
-## Putting data in a bank
+## Status
 
-```c
-#pragma rodata-name(push, "BANK2")
-const u8 stage2_map[] = { ... };
-#pragma rodata-name(pop)
-```
+Early but playable: the first stage is in, with enemies, combat, a title
+screen and music. More is on the way.
 
-Code in the fixed bank reads it with `banked_copy(2, ram_dest, stage2_map, size)`.
-C code can also go in a bank with `#pragma code-name(push, "BANK1")`, but it can
-only be called while that bank is mapped, so keep it to self-contained
-routines and call them from the fixed bank after switching.
+## Made with
 
-## cc65 tips for speed
+- **Code**: C and 6502 assembly, built with [cc65](https://cc65.github.io)
+- **Graphics**: [NEXXT](https://frankengraphics.itch.io/nexxt) and
+  [Aseprite](https://www.aseprite.org)
+- **Music and sound**: [FamiStudio](https://famistudio.org), played by the
+  FamiStudio sound engine (MIT license)
+- **Testing**: [NES-Emulator](https://github.com/TSS71998/NES-Emulator) and
+  [Mesen](https://www.mesen.ca)
 
-- Prefer `u8` (unsigned char) everywhere. 16-bit math is much slower.
-- Make loop variables and hot locals `static`, as in `main.c`. cc65 handles
-  stack-based locals slowly.
-- Avoid multiply, divide and modulo on variables. Use shifts and lookup tables.
-- Read `build/*.s` to see what the compiler produced. When you port to
-  assembly, start with whatever is slowest.
+## For developers
+
+How the game is put together (the cartridge layout, levels, the HUD,
+enemies, music, and how to add your own) is in
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
+---
+
+<p align="center">Created by <a href="https://github.com/TSS71998">TSS71998</a></p>
