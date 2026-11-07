@@ -4,9 +4,9 @@ How the game is built, how it works, and how to add to it. For the game
 itself, see the [README](../README.md).
 
 The game is written in C with cc65, plus assembly for the parts that run every
-frame, on an MMC1 (mapper 1) cartridge. Graphics come from NEXXT, music from
-FamiStudio, and no Python is used anywhere: the one build tool,
-`tools/nam2level.c`, is C.
+frame, on an MMC1 (mapper 1) cartridge. Graphics come from Aseprite and NEXXT, music from
+FamiStudio and the build tools,
+`tools/bmp2level.c` and `tools/nam2level.c`, are in C.
 
 ## Building
 
@@ -15,7 +15,7 @@ Requirements:
 - **cc65** (2.19 or newer): `sudo apt install cc65`, `brew install cc65`, or
   the Windows snapshot from cc65.github.io
 - **make** and a normal C compiler (`gcc`, `clang` or `cc`; on WSL/Ubuntu:
-  `sudo apt install gcc`) to build the level converter. Set `HOSTCC=` to use
+  `sudo apt install gcc`) to build the level converters. Set `HOSTCC=` to use
   a different compiler.
 
 ```
@@ -49,12 +49,14 @@ source-level C debugging) and `build/map.txt` (how full each bank is).
 | `src/hud.h` / `hud.c` | The status bar: score, player and enemy health |
 | `src/title.h` / `title.c`, `title_data.s` | The title screen |
 | `src/audio.h` / `audio.s`, `audio_data.s`, `audio_engine.s` | Music and sound effects |
-| `chr/bg.chr`, `chr/sprites.chr`, `chr/title.chr` | Tiles (from NEXXT) |
-| `levels/` | Level screens, palette and collision list (from NEXXT) |
+| `chr/sprites.chr`, `chr/title.chr` | Sprite and title tiles (from NEXXT) |
+| `chr/bg.chr` | Only its tiles `$C0`–`$FF` are used: the status bar font. The rest of the background tiles are made from the levels |
+| `levels/` | The level pictures, collision pictures and palettes |
 | `title/` | The title screen and its palette (from NEXXT) |
 | `audio/` | The FamiStudio projects, their exports, and the sound engine |
 | `cfg/mmc1.cfg` | Linker layout of the banks |
-| `tools/nam2level.c` | Converts `levels/*.nam` into level data; built and run by `make` |
+| `tools/bmp2level.c` | Turns `levels/*.bmp` into background tiles (`build/bg.chr`) and screens; built and run by `make` |
+| `tools/nam2level.c` | Turns those screens into level data; built and run by `make`
 
 ## Cartridge layout
 
@@ -102,15 +104,35 @@ need more of the game in assembly.
 
 ## Levels
 
-A level is one or more screens side by side, drawn in NEXXT:
+A level is one picture, drawn in Aseprite (or any paint program), plus a
+second picture saying what's solid:
 
-- Save each screen as `levels/NAME_0.nam`, `NAME_1.nam`, ... (nametable with
-  attributes, RLE off) and the palette as `levels/NAME.pal`.
-- `levels/collision.txt` lists which background tiles are solid, e.g.
-  `solid 5C-64`. Collision works on 8x8 tiles.
-- `make` runs `tools/nam2level.c`, which turns the screens into 16x16 blocks
-  shared by the whole level (`build/levels.c`/`.h`). Load one with
-  `level_load(LEVEL_BANK, &lvl_NAME)`.
+| File | What it is |
+|---|---|
+| `levels/NAME.bmp` | The level: 240 pixels tall, 256 pixels wide per screen (up to 32 screens), saved as an indexed 4- or 8-bit BMP |
+| `levels/NAME_collision.bmp` | Same size: paint anything solid in any colour on black. Works in 8x8 cells; a cell with any coloured pixel is solid |
+| `levels/NAME.pal` | The 16 NES colours of the background palettes (from NEXXT: Palettes > Save palettes) |
+
+Then `make`. `tools/bmp2level.c` turns the picture into tiles and screens,
+and `tools/nam2level.c` turns those into the game's level data
+(`build/levels.c`/`.h`). Load a level with `level_load(LEVEL_BANK, &lvl_NAME)`.
+
+Rules for the picture (`make` stops and says where if one is broken):
+
+- **Palette layout:** the picture's first 16 colours are the 4 NES
+  background palettes in order: colours 0–3 are palette 0, 4–7 palette 1,
+  and so on. Colours 0, 4, 8 and 12 are the background (black). The shades
+  in the picture only show which colour is which; what the NES shows comes
+  from `NAME.pal`.
+- **One palette per 16x16 square** (on the 16x16 grid). Using the same shade
+  from another palette is fine.
+- **192 different 8x8 tiles** for all levels together: tiles `$C0`–`$FF`
+  are the status bar font, taken from `chr/bg.chr`. A tile that's solid in
+  one place and not in another counts twice.
+- **256 different 16x16 blocks** per level.
+- **Palette 1** is also the status bar's colours.
+- The top 32 pixels are under the status bar and are left out, and so are
+  empty screens at the end, so the canvas can be wider than what's drawn.
 
 While playing, the level map lives in PRG-RAM and the camera streams in each
 8-pixel column of tiles just before it comes into view. Positions in the
@@ -133,7 +155,7 @@ ENEMY  ||||||||||||||||
   **Keep both tiles** when editing the sheets in NEXXT. If either goes
   missing, the split turns itself off and the HUD scrolls with the level.
 - The HUD font is in `bg.chr` at `$C0`–`$FF` (digits at `$D0`, A–Z at
-  `$E0`); keep that area free of level art.
+  `$E0`); edit it in `chr/bg.chr`, which the build takes it from.
 
 ## Enemies
 

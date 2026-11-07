@@ -85,7 +85,7 @@ static void petals_clear(void) {
 }
 
 static void petal_spawn(void) {
-    static i, x;
+    static u8 i, x;
     for (i = 0; i < PETAL_MAX; ++i) {
         if (!p_on[i]) break;
     }

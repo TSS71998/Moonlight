@@ -6,7 +6,7 @@ NAME    := moonlight
 CC65    := cc65
 CA65    := ca65
 LD65    := ld65
-# Your normal C compiler, used to build tools/nam2level.c (not for the NES)
+# Your normal C compiler, used to build tools in tools/ (not for the NES)
 HOSTCC  ?= cc
 EMU     ?= /mnt/c/Users/Thesu/dev/rust_projects/nes_emulator
 CFLAGS  := -O -t nes --add-source -I src -I build
@@ -15,8 +15,9 @@ BUILD   := build
 C_SRC   := $(wildcard src/*.c)
 S_SRC   := $(wildcard src/*.s)
 OBJS    := $(C_SRC:src/%.c=$(BUILD)/%.o) $(S_SRC:src/%.s=$(BUILD)/%.o) $(BUILD)/levels.o
-CHR     := chr/bg.chr chr/sprites.chr chr/title.chr
-SCREENS := $(wildcard levels/*.nam)
+CHR     := $(BUILD)/bg.chr chr/sprites.chr chr/title.chr
+LEVELS  := $(filter-out %_collision.bmp,$(wildcard levels/*.bmp))
+LVL     := $(BUILD)/lvl
 
 # cc65 2.20+ renamed the C stack pointer from `sp` to `c_sp`; detect which.
 HAS_C_SP := $(shell mkdir -p $(BUILD) && printf '.include "zeropage.inc"\nlda c_sp\n' > $(BUILD)/spcheck.s && $(CA65) $(BUILD)/spcheck.s -o $(BUILD)/spcheck.o 2>/dev/null && echo yes)
@@ -37,13 +38,23 @@ $(BUILD)/%.o: src/%.c src/*.h | $(BUILD)
 $(BUILD)/%.o: src/%.s | $(BUILD)
 	$(CA65) $(ASFLAGS) $< -o $@
 
-# Level data: screens drawn in NEXXT (levels/*.nam + .pal) -> build/levels.c/.h,
-# converted by tools/nam2level.c (compiled with HOSTCC, runs on your computer)
-$(BUILD)/nam2level: tools/nam2level.c | $(BUILD)
+# Levels: pictures (levels/NAME.bmp + NAME_collision.bmp + NAME.pal)
+#   -> tools/bmp2level.c -> the background tiles (build/bg.chr, with the
+#      status bar font from chr/bg.chr) and one screen per 256 pixels
+#   -> tools/nam2level.c -> build/levels.c/.h
+# Both tools are compiled with HOSTCC and run on your computer.
+$(BUILD)/nam2level $(BUILD)/bmp2level: $(BUILD)/%: tools/%.c | $(BUILD)
 	$(HOSTCC) -O2 -o $@ $<
 
-$(BUILD)/levels.c: $(SCREENS) $(wildcard levels/*.pal) levels/collision.txt $(BUILD)/nam2level
-	$(BUILD)/nam2level -o $(BUILD)/levels -c levels/collision.txt $(SCREENS)
+$(LVL)/stamp: $(LEVELS) $(wildcard levels/*_collision.bmp) $(wildcard levels/*.pal) chr/bg.chr $(BUILD)/bmp2level
+	rm -rf $(LVL) && mkdir -p $(LVL)
+	$(BUILD)/bmp2level -font chr/bg.chr -chr $(BUILD)/bg.chr -o $(LVL) $(LEVELS)
+	touch $@
+
+$(BUILD)/bg.chr: $(LVL)/stamp ;
+
+$(BUILD)/levels.c: $(LVL)/stamp $(BUILD)/nam2level
+	$(BUILD)/nam2level -o $(BUILD)/levels -c $(LVL)/collision.txt $(LVL)/*.nam
 
 $(BUILD)/levels.h: $(BUILD)/levels.c ;
 
@@ -53,7 +64,7 @@ $(BUILD)/levels.o: $(BUILD)/levels.c $(BUILD)/levels.h src/level.h src/nes.h
 
 $(BUILD)/main.o: $(BUILD)/levels.h
 
-# CHR files come from NEXXT; rebuild when they change
+# CHR files (from NEXXT, and the made background tiles); rebuild when they change
 $(BUILD)/crt0.o: $(CHR)
 
 $(BUILD)/title_data.o: title/title.nam title/title.pal

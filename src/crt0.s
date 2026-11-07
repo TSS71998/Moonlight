@@ -331,7 +331,7 @@ _vram_buf_flush:
     .res 256
 
 .segment "CHARS"
-    .incbin "chr/bg.chr"        ; CHR bank 0 (4 KB): background tiles
+    .incbin "build/bg.chr"        ; CHR bank 0 (4 KB): background tiles (made by tools/bmp2level.c)
     .incbin "chr/sprites.chr"   ; CHR bank 1 (4 KB): sprite tiles
     .incbin "chr/title.chr"     ; CHR bank 2 (4 KB): title screen tiles (title.c)
     ; the remaining 20 KB (banks 3-7) is left empty for later graphics
