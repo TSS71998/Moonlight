@@ -166,6 +166,11 @@ static void walk(void) {
                 step = 0;
             }
         } 
+        if (step && !e_fall[i] && !level_solid_at(probe, y)
+            && !level_solid_at(probe, y + 8)) {
+            e_left[i] ^= 1;
+            step = 0;
+        }
         if (e_left[i]) e_x[i] -= step;
         else           e_x[i] += step;
     }
