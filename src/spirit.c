@@ -206,7 +206,6 @@ void spirits_update(void) {
 void spirits_draw(void) {
     static const SpiritSpawn *p;
     static u8 s, st, k, y, anim, phase;
-    static const u8 *frame;
 
     anim = frame_count / SPIRIT_ANIM + win_lo;
     phase = (frame_count >> 3) + win_lo + win_lo + win_lo;

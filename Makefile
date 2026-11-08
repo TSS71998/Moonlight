@@ -54,7 +54,8 @@ $(LVL)/stamp: $(LEVELS) $(wildcard levels/*_collision.bmp) $(wildcard levels/*.p
 $(BUILD)/bg.chr: $(LVL)/stamp ;
 
 $(BUILD)/levels.c: $(LVL)/stamp $(BUILD)/nam2level
-	$(BUILD)/nam2level -o $(BUILD)/levels -c $(LVL)/collision.txt $(LVL)/*.nam
+	$(BUILD)/nam2level -o $(BUILD)/levels -c $(LVL)/collision.txt $(LVL)/*.nam \
+		|| { rm -f $(BUILD)/levels.c $(BUILD)/levels.h; exit 1; }
 
 $(BUILD)/levels.h: $(BUILD)/levels.c ;
 

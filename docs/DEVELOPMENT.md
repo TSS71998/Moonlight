@@ -129,7 +129,10 @@ Rules for the picture (`make` stops and says where if one is broken):
 - **192 different 8x8 tiles** for all levels together: tiles `$C0`–`$FF`
   are the status bar font, taken from `chr/bg.chr`. A tile that's solid in
   one place and not in another counts twice.
-- **256 different 16x16 blocks** per level.
+- **256 different 16x16 blocks** per level. If a level has more, `make`
+  stops, says how many each screen adds, and writes
+  `build/lvl/NAME_blocks.bmp`: the level with every block that's used only
+  once in red, which shows where reusing pieces would help most.
 - **Palette 1** is also the status bar's colours.
 - The top 32 pixels are under the status bar and are left out, and so are
   empty screens at the end, so the canvas can be wider than what's drawn.

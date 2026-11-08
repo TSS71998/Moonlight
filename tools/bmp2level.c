@@ -9,6 +9,7 @@
 #define HUD_H       32              /* must match hud.h: HUD_ROWS * 8 */
 #define LEVEL_TILES 0xC0            /* tiles $00-$BF are the level's */
 #define MAX_W       (SCREEN_W * MAX_SCREENS)
+#define MAX_BLOCKS  256             /* must match nam2level.c: MAX_METATILES */
 
 typedef struct {
     int w, h;
@@ -25,6 +26,8 @@ typedef struct {
 
 static Tile tiles[4096];         /* more than fit, so the error can say how many */
 static int n_tiles;
+static int level_blocks;
+static int scr_new_blocks[MAX_SCREENS];
 
 static void die(const char *fmt, ...) {
     va_list ap;
@@ -146,6 +149,34 @@ static long read_file(const char *path, unsigned char *buf, long size) {
 static void write_file(const char *path, const unsigned char *buf, size_t size) {
     FILE *f = fopen(path, "wb");
     if (!f || fwrite(buf, 1, size, f) != size) die("%s: can't write", path);
+    fclose(f);
+}
+
+
+/* a 24-bit BMP, for the block report; rgb is rows of `stride` pixels */
+static void write_bmp24(const char *path, int w, int h, const unsigned char *rgb, int stride) {
+    FILE *f = fopen(path, "wb");
+    int rowbytes = (w * 3 + 3) & ~3, x, y;
+    unsigned long size = 54UL + (unsigned long)rowbytes * (unsigned long)h;
+    unsigned char hdr[54], pad[3] = { 0, 0, 0 };
+    if (!f) die("%s: can't write", path);
+    memset(hdr, 0, sizeof(hdr));
+    hdr[0] = 'B'; hdr[1] = 'M';
+    hdr[2] = size & 255; hdr[3] = size >> 8 & 255; hdr[4] = size >> 16 & 255; hdr[5] = size >> 24 & 255;
+    hdr[10] = 54; hdr[14] = 40;
+    hdr[18] = w & 255; hdr[19] = w >> 8 & 255;
+    hdr[22] = h & 255; hdr[23] = h >> 8 & 255;
+    hdr[26] = 1; hdr[28] = 24;
+    fwrite(hdr, 1, 54, f);
+    for (y = h - 1; y >= 0; --y) {
+        for (x = 0; x < w; ++x) {
+            const unsigned char *p = rgb + ((size_t)y * (size_t)stride + (size_t)x) * 3;
+            unsigned char bgr[3];
+            bgr[0] = p[2]; bgr[1] = p[1]; bgr[2] = p[0];
+            fwrite(bgr, 1, 3, f);
+        }
+        fwrite(pad, 1, (size_t)(rowbytes - w * 3), f);
+    }
     fclose(f);
 }
 
@@ -285,6 +316,65 @@ static void convert_level(const char *path, const char *out_dir) {
         }
     }
 
+
+    /* 16x16 blocks: nam2level makes one per different block (its 4 tiles
+       and palette), and a level can have at most MAX_BLOCKS */
+    {
+        static unsigned char blk[MAX_SCREENS * 16 * 15][5];
+        static unsigned short blk_of[MAX_SCREENS][15][16];
+        static unsigned short uses[MAX_SCREENS * 16 * 15];
+        int n_blk = 0, k, once = 0;
+        for (sx = 0; sx < used_scr; ++sx) {
+            int before = n_blk;
+            for (by = 0; by < 15; ++by)
+                for (bx = 0; bx < 16; ++bx) {
+                    const unsigned char *n = nam[sx];
+                    unsigned char b[5];
+                    b[0] = n[by * 64 + bx * 2];
+                    b[1] = n[by * 64 + bx * 2 + 1];
+                    b[2] = n[by * 64 + 32 + bx * 2];
+                    b[3] = n[by * 64 + 32 + bx * 2 + 1];
+                    b[4] = (unsigned char)((n[960 + (by >> 1) * 8 + (bx >> 1)] >>
+                                            (((by & 1) << 2) | ((bx & 1) << 1))) & 3);
+                    for (k = 0; k < n_blk; ++k)
+                        if (!memcmp(blk[k], b, 5)) break;
+                    if (k == n_blk) { memcpy(blk[n_blk], b, 5); uses[n_blk] = 0; ++n_blk; }
+                    ++uses[k];
+                    blk_of[sx][by][bx] = (unsigned short)k;
+                }
+            scr_new_blocks[sx] = n_blk - before;
+        }
+        for (k = 0; k < n_blk; ++k)
+            if (uses[k] == 1) ++once;
+        level_blocks = n_blk;
+
+        if (n_blk > MAX_BLOCKS) {
+            /* a copy of the picture with the blocks used only once in red */
+            static unsigned char out[SCREEN_H][MAX_W][3];
+            for (y = 0; y < SCREEN_H; ++y)
+                for (x = 0; x < used_scr * SCREEN_W; ++x) {
+                    unsigned c = im.rgb[im.px[(size_t)y * (size_t)im.w + (size_t)x]];
+                    unsigned r = c >> 16 & 255, g = c >> 8 & 255, b = c & 255;
+                    if (uses[blk_of[x / SCREEN_W][y >> 4][(x & 255) >> 4]] == 1) {
+                        r = (r + 3 * 255) / 4; g = g / 3; b = b / 3;
+                    }
+                    out[y][x][0] = (unsigned char)r;
+                    out[y][x][1] = (unsigned char)g;
+                    out[y][x][2] = (unsigned char)b;
+                }
+            snprintf(fpath, sizeof(fpath), "%s/%s_blocks.bmp", out_dir, name);
+            write_bmp24(fpath, used_scr * SCREEN_W, SCREEN_H, &out[0][0][0], MAX_W);
+
+            fprintf(stderr, "bmp2level: %s has %d different 16x16 blocks; a level can "
+                    "have %d.\n  New blocks per screen:", path, n_blk, MAX_BLOCKS);
+            for (sx = 0; sx < used_scr; ++sx) fprintf(stderr, " %d", scr_new_blocks[sx]);
+            fprintf(stderr, "\n  %d blocks are used only once; %s shows them in red.\n"
+                    "  Reuse more of the same 16x16 pieces (on the 16x16 grid) there.\n",
+                    once, fpath);
+            exit(1);
+        }
+    }
+
     pal_size = read_file(strcat(strcpy(fpath, base), ".pal"), pal, 16);
     if (pal_size != 16)
         die("%s: missing or not 16 bytes. Save the level's palette from NEXXT "
@@ -300,7 +390,7 @@ static void convert_level(const char *path, const char *out_dir) {
     printf("%s: %d screen%s", path, used_scr, used_scr == 1 ? "" : "s");
     if (used_scr < n_scr) printf(" (%d empty one%s at the end left out)",
                                  n_scr - used_scr, n_scr - used_scr == 1 ? "" : "s");
-    printf(", %d new tiles\n", n_tiles - first_tile);
+    printf(", %d new tiles, %d of %d blocks\n", n_tiles - first_tile, level_blocks, MAX_BLOCKS);
     if (hidden)
         printf("  note: there's art in the top %d pixels, which are under the status "
                "bar and left out\n", HUD_H);
