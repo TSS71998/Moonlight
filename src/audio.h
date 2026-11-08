@@ -16,6 +16,7 @@
 #define SFX_BREAK     6
 #define SFX_PICKUP    7
 #define SFX_SPIKE     8
+#define SFX_CLEAR     9
 
 #define SFX_PLAYER 0
 #define SFX_WORLD  1

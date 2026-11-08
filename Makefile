@@ -15,7 +15,7 @@ BUILD   := build
 C_SRC   := $(wildcard src/*.c)
 S_SRC   := $(wildcard src/*.s)
 OBJS    := $(C_SRC:src/%.c=$(BUILD)/%.o) $(S_SRC:src/%.s=$(BUILD)/%.o) $(BUILD)/levels.o
-CHR     := $(BUILD)/bg.chr chr/sprites.chr chr/title.chr
+CHR     := $(BUILD)/bg.chr $(BUILD)/bg_more.chr chr/sprites.chr chr/title.chr
 LEVELS  := $(filter-out %_collision.bmp,$(wildcard levels/*.bmp))
 LVL     := $(BUILD)/lvl
 
@@ -39,8 +39,9 @@ $(BUILD)/%.o: src/%.s | $(BUILD)
 	$(CA65) $(ASFLAGS) $< -o $@
 
 # Levels: pictures (levels/NAME.bmp + NAME_collision.bmp + NAME.pal)
-#   -> tools/bmp2level.c -> the background tiles (build/bg.chr, with the
-#      status bar font from chr/bg.chr) and one screen per 256 pixels
+#   -> tools/bmp2level.c -> each level's background tiles (build/bg.chr,
+#      bg_more.chr, with the status bar font from chr/bg.chr; which CHR bank
+#      is whose in build/level_chr.h) and one screen per 256 pixels
 #   -> tools/nam2level.c -> build/levels.c/.h
 # Both tools are compiled with HOSTCC and run on your computer.
 $(BUILD)/nam2level $(BUILD)/bmp2level: $(BUILD)/%: tools/%.c | $(BUILD)
@@ -48,10 +49,10 @@ $(BUILD)/nam2level $(BUILD)/bmp2level: $(BUILD)/%: tools/%.c | $(BUILD)
 
 $(LVL)/stamp: $(LEVELS) $(wildcard levels/*_collision.bmp) $(wildcard levels/*.pal) chr/bg.chr $(BUILD)/bmp2level
 	rm -rf $(LVL) && mkdir -p $(LVL)
-	$(BUILD)/bmp2level -font chr/bg.chr -chr $(BUILD)/bg.chr -o $(LVL) $(LEVELS)
-	touch $@
+	$(BUILD)/bmp2level -font chr/bg.chr -chr $(BUILD)/bg.chr -chr-more $(BUILD)/bg_more.chr \
+		-h $(BUILD)/level_chr.h -o $(LVL) $(LEVELS)
 
-$(BUILD)/bg.chr: $(LVL)/stamp ;
+$(BUILD)/bg.chr $(BUILD)/bg_more.chr $(BUILD)/level_chr.h: $(LVL)/stamp ;
 
 $(BUILD)/levels.c: $(LVL)/stamp $(BUILD)/nam2level
 	$(BUILD)/nam2level -o $(BUILD)/levels -c $(LVL)/collision.txt $(LVL)/*.nam \
@@ -63,7 +64,7 @@ $(BUILD)/levels.o: $(BUILD)/levels.c $(BUILD)/levels.h src/level.h src/nes.h
 	$(CC65) $(CFLAGS) $< -o $(BUILD)/levels.s
 	$(CA65) $(ASFLAGS) $(BUILD)/levels.s -o $@
 
-$(BUILD)/main.o: $(BUILD)/levels.h
+$(BUILD)/main.o $(BUILD)/stage.o: $(BUILD)/levels.h $(BUILD)/level_chr.h
 
 # CHR files (from NEXXT, and the made background tiles); rebuild when they change
 $(BUILD)/crt0.o: $(CHR)

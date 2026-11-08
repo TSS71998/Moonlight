@@ -204,6 +204,22 @@ int main(int argc, char **argv) {
         }
         if (n_scr > MAX_SCREENS)
             die("level %s: %d screens, the limit is %d", name, n_scr, MAX_SCREENS);
+        
+        {
+            const char *s0 = screens[first].path, *sl1 = strrchr(s0, '/'),
+                       *sl2 = strrchr(s0, '\\'), *sl = sl1 > sl2 ? sl1 : sl2;
+            char cpath[1100];
+            FILE *t;
+            snprintf(cpath, sizeof(cpath), "%.*s%s_collision.txt",
+                     sl ? (int)(sl - s0 + 1) : 0, s0, name);
+            memset(solid, 0, sizeof(solid));
+            if ((t = fopen(cpath, "r")) != NULL) {
+                fclose(t);
+                parse_collision(cpath);
+            } else {
+                parse_collision(coll);
+            }
+        }
 
         for (sc = 0; sc < n_scr; ++sc) {
             const char *nam = screens[first + sc].path;

@@ -21,6 +21,8 @@
 
 void hud_init(void);
 
+void hud_new_game(void);
+
 void __fastcall__ hud_add_score(u16 points);
 void __fastcall__ hud_set_player_hp(u8 hp);
 void __fastcall__ hud_set_enemy_hp(u8 hp);

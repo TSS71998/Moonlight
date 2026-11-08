@@ -1,3 +1,17 @@
+/* bmp2level.c - turns levels drawn in Aseprite (levels/NAME.bmp, with
+ * NAME_collision.bmp and NAME.pal) into screens for nam2level, and each
+ * level's own background tiles: one 4 KB CHR bank per level, with the
+ * status bar font from chr/bg.chr at $C0-$FF. Run by the Makefile:
+ *
+ *   bmp2level -font chr/bg.chr -chr build/bg.chr -chr-more build/bg_more.chr
+ *             -h build/level_chr.h -o build/lvl levels/NAME.bmp ...
+ *
+ * build/bg.chr is the first level's tiles (CHR bank 0), bg_more.chr the
+ * others' (CHR banks 3 on), and level_chr.h says which bank is whose:
+ * #define CHR_forest 0. In build/lvl: NAME_0.nam..., NAME.pal and
+ * NAME_collision.txt for each level. See docs/DEVELOPMENT.md, "Levels".
+ */
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,7 +39,16 @@ typedef struct {
 } Tile;
 
 static Tile tiles[4096];         /* more than fit, so the error can say how many */
-static int n_tiles;
+static int n_tiles;              /* in the level being made: each level has its own */
+
+/* Each level gets its own 4 KB CHR bank of background tiles. The first is
+   CHR bank 0; the others go after the sprite and title banks, from bank 3:
+   up to MAX_LEVELS in all (CHR-ROM is 8 banks of 4 KB). */
+#define MAX_LEVELS  6
+static unsigned char chr_banks[MAX_LEVELS][4096];
+static unsigned char font_chr[4096];
+static char level_names[MAX_LEVELS][256];
+static int n_levels;
 static int level_blocks;
 static int scr_new_blocks[MAX_SCREENS];
 
@@ -195,10 +218,20 @@ static void convert_level(const char *path, const char *out_dir) {
     char base[1024], name[256], cpath[1100], fpath[1200];
     unsigned char pal[16];
     Image im, col;
-    int n_scr, used_scr, sx, bx, by, x, y, i, hidden = 0, first_tile = n_tiles;
+    int n_scr, used_scr, sx, bx, by, x, y, i, hidden = 0;
+    Tile blank;
     long pal_size;
 
     split_path(path, base, sizeof(base), name, sizeof(name));
+    if (n_levels == MAX_LEVELS) die("%s: more than %d levels; CHR-ROM has room for %d", path, MAX_LEVELS, MAX_LEVELS);
+    snprintf(level_names[n_levels], sizeof(level_names[0]), "%s", name);
+    for (i = 0; level_names[n_levels][i]; ++i)          /* (a C name for level_chr.h) */
+        if (!isalnum((unsigned char)level_names[n_levels][i])) level_names[n_levels][i] = '_';
+
+    /* this level's tiles start empty: tile $00 blank, not solid */
+    n_tiles = 0;
+    memset(&blank, 0, sizeof(blank));
+    add_tile(&blank);
     if (!load_bmp(path, &im)) die("%s: can't open", path);
     if (!im.indexed)
         die("%s: the level picture must be indexed (4- or 8-bit, 16 colours "
@@ -316,6 +349,10 @@ static void convert_level(const char *path, const char *out_dir) {
         }
     }
 
+    if (n_tiles > LEVEL_TILES)
+        die("%s needs %d different 8x8 tiles; a level can have %d (tiles $C0-$FF "
+            "are the status bar font). Reuse more of the same pieces.",
+            path, n_tiles, LEVEL_TILES);
 
     /* 16x16 blocks: nam2level makes one per different block (its 4 tiles
        and palette), and a level can have at most MAX_BLOCKS */
@@ -390,38 +427,59 @@ static void convert_level(const char *path, const char *out_dir) {
     printf("%s: %d screen%s", path, used_scr, used_scr == 1 ? "" : "s");
     if (used_scr < n_scr) printf(" (%d empty one%s at the end left out)",
                                  n_scr - used_scr, n_scr - used_scr == 1 ? "" : "s");
-    printf(", %d new tiles, %d of %d blocks\n", n_tiles - first_tile, level_blocks, MAX_BLOCKS);
+    printf(", %d of %d tiles, %d of %d blocks\n", n_tiles, LEVEL_TILES, level_blocks, MAX_BLOCKS);
     if (hidden)
         printf("  note: there's art in the top %d pixels, which are under the status "
                "bar and left out\n", HUD_H);
+
+    /* its tile sheet: its tiles, then the font */
+    {
+        unsigned char *chr = chr_banks[n_levels];
+        FILE *coll;
+        memset(chr, 0, 4096);
+        for (i = 0; i < n_tiles; ++i) memcpy(chr + i * 16, tiles[i].chr, 16);
+        memcpy(chr + LEVEL_TILES * 16, font_chr + LEVEL_TILES * 16, 4096 - LEVEL_TILES * 16);
+
+        /* and which of them are solid, for nam2level */
+        snprintf(fpath, sizeof(fpath), "%s/%s_collision.txt", out_dir, name);
+        coll = fopen(fpath, "w");
+        if (!coll) die("%s: can't write", fpath);
+        fprintf(coll, "# made by tools/bmp2level.c from %s\n", cpath);
+        for (i = 0; i < n_tiles; ++i)
+            if (tiles[i].solid) fprintf(coll, "solid %02X\n", i);
+        fclose(coll);
+    }
+    ++n_levels;
 }
 
 int main(int argc, char **argv) {
-    const char *font = 0, *chr_out = 0, *out_dir = 0;
-    static unsigned char chr[4096], font_chr[4096];
+    const char *font = 0, *chr_out = 0, *chr_more = 0, *header = 0, *out_dir = 0;
     char path[1100];
-    FILE *coll;
-    int i, n_levels = 0, n_solid = 0;
-    Tile blank;
+    FILE *f;
+    int i;
 
     for (i = 1; i < argc; ++i) {
         if (!strcmp(argv[i], "-font") && i + 1 < argc) font = argv[++i];
         else if (!strcmp(argv[i], "-chr") && i + 1 < argc) chr_out = argv[++i];
+        else if (!strcmp(argv[i], "-chr-more") && i + 1 < argc) chr_more = argv[++i];
+        else if (!strcmp(argv[i], "-h") && i + 1 < argc) header = argv[++i];
         else if (!strcmp(argv[i], "-o") && i + 1 < argc) out_dir = argv[++i];
     }
-    if (!font || !chr_out || !out_dir)
-        die("usage: bmp2level -font chr/bg.chr -chr build/bg.chr -o build/lvl levels/NAME.bmp ...");
+    if (!font || !chr_out || !chr_more || !header || !out_dir)
+        die("usage: bmp2level -font chr/bg.chr -chr build/bg.chr -chr-more build/bg_more.chr "
+            "-h build/level_chr.h -o build/lvl levels/NAME.bmp ...");
     if (read_file(font, font_chr, 4096) != 4096) die("%s: expected a 4096-byte tile sheet", font);
 
-    memset(&blank, 0, sizeof(blank));
-    add_tile(&blank);                   /* tile $00: empty, not solid */
-
+    /* nam2level wants a collision list; each level has its own as well */
     snprintf(path, sizeof(path), "%s/collision.txt", out_dir);
-    coll = fopen(path, "w");
-    if (!coll) die("%s: can't write (does the folder exist?)", path);
+    f = fopen(path, "w");
+    if (!f) die("%s: can't write (does the folder exist?)", path);
+    fprintf(f, "# each level's solid tiles are in NAME_collision.txt\n");
+    fclose(f);
 
     for (i = 1; i < argc; ++i) {
-        if (!strcmp(argv[i], "-font") || !strcmp(argv[i], "-chr") || !strcmp(argv[i], "-o")) {
+        if (!strcmp(argv[i], "-font") || !strcmp(argv[i], "-chr") || !strcmp(argv[i], "-chr-more")
+            || !strcmp(argv[i], "-h") || !strcmp(argv[i], "-o")) {
             ++i;
             continue;
         }
@@ -430,29 +488,24 @@ int main(int argc, char **argv) {
             if (len >= 14 && !strcmp(argv[i] + len - 14, "_collision.bmp")) continue;
         }
         convert_level(argv[i], out_dir);
-        ++n_levels;
     }
     if (!n_levels) die("no levels/*.bmp given");
 
-    if (n_tiles > LEVEL_TILES)
-        die("the levels need %d different 8x8 tiles; only %d fit (tiles $C0-$FF "
-            "are the status bar font). Reuse more of the same pieces.",
-            n_tiles, LEVEL_TILES);
+    /* the first level's tiles are CHR bank 0; the rest go from bank 3 */
+    write_file(chr_out, chr_banks[0], 4096);
+    f = fopen(chr_more, "wb");
+    if (!f) die("%s: can't write", chr_more);
+    for (i = 1; i < n_levels; ++i) fwrite(chr_banks[i], 1, 4096, f);
+    fclose(f);
 
-    /* the tile sheet: level tiles, then the font */
-    memset(chr, 0, sizeof(chr));
-    for (i = 0; i < n_tiles; ++i) memcpy(chr + i * 16, tiles[i].chr, 16);
-    memcpy(chr + LEVEL_TILES * 16, font_chr + LEVEL_TILES * 16, 4096 - LEVEL_TILES * 16);
-    write_file(chr_out, chr, 4096);
-
-    fprintf(coll, "# made by tools/bmp2level.c from levels/*_collision.bmp\n");
-    for (i = 0; i < n_tiles; ++i)
-        if (tiles[i].solid) {
-            fprintf(coll, "solid %02X\n", i);
-            ++n_solid;
-        }
-    fclose(coll);
-
-    printf("background tiles: %d of %d used (%d solid)\n", n_tiles, LEVEL_TILES, n_solid);
+    f = fopen(header, "w");
+    if (!f) die("%s: can't write", header);
+    fprintf(f, "/* Made by tools/bmp2level.c: the CHR bank of each level's background\n"
+               "   tiles (for mmc1_set_chr0). Do not edit. */\n"
+               "#ifndef LEVEL_CHR_H\n#define LEVEL_CHR_H\n\n");
+    for (i = 0; i < n_levels; ++i)
+        fprintf(f, "#define CHR_%s %d\n", level_names[i], i == 0 ? 0 : 2 + i);
+    fprintf(f, "\n#endif\n");
+    fclose(f);
     return 0;
 }

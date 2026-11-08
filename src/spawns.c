@@ -8,6 +8,8 @@ const EnemySpawn forest_spawns[] = {
     { 640, 192, ENEMY_SKELETON },
     { 800, 207, ENEMY_SKELETON },
     { 910, 110, ENEMY_BAT },
+    { 1360, 192, ENEMY_SKELETON },
+    { 1472, 192, ENEMY_SKELETON },
     { 0, 0, ENEMY_NONE },
 };
 
@@ -18,6 +20,7 @@ const SpiritSpawn forest_spirits[] = {
     { 600, 184, ITEM_POINTS },
     { 984, 120, ITEM_HEAL_BIG },
     { 1224, 184, ITEM_POINTS },
+    { 1392, 184, ITEM_POINTS_BIG },
     { 0, 0, ITEM_NONE },
 };
 

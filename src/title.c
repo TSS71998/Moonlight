@@ -2,6 +2,9 @@
 #include "hud.h"
 #include "audio.h"
 
+#pragma code-name(push, "BANK1")
+#pragma rodata-name(push, "BANK1")
+
 extern const u8 title_nam[1024];
 extern const u8 title_pal[16];
 
@@ -50,7 +53,7 @@ static const u8 rose_emph[ROSE_STEPS] = { 0x00, 0xC0, 0xC0, 0xC0, 0xE0 };
 #define PETAL_ATTR PETAL_PAL
 #endif
 
-static u8 full_pal[32];
+u8 full_pal[32];
 
 static u8 p_on[PETAL_MAX];
 static u8 p_x[PETAL_MAX];
@@ -161,7 +164,7 @@ static void __fastcall__ wait_frames(u8 n) {
     while (n--) title_frame();
 }
 
-void title_screen(void) {
+void title_run(void) {
     static u8 old_bank, i, pad, pad_prev;
 
     ppu_off();
@@ -226,4 +229,14 @@ void title_screen(void) {
     oam_clear();
     ppu_off();
     mmc1_set_chr0(0);
+}
+#pragma rodata-name(pop)
+#pragma code-name(pop)
+
+void title_screen(void) {
+    static u8 old;
+    old = prg_bank;
+    mmc1_set_prg_bank(TITLE_BANK);
+    title_run();
+    mmc1_set_prg_bank(old);
 }

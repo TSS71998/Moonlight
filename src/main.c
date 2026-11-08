@@ -6,6 +6,8 @@
 #include "enemy.h"
 #include "spirit.h"
 #include "trap.h"
+#include "intro.h"
+#include "stage.h"
 #include "title.h"
 #include "audio.h"
 
@@ -22,26 +24,41 @@ static const u8 palette[32] = {
     0x0F, 0x16, 0x27, 0x37,
 };
 
-static void play_game(void) {
-    static u8 pad, pad_prev, pressed;
+static u8 stage;
+static const Stage *st;
+static u16 exit_x;
 
+static void start_stage(void) {
+    st = &stages[stage];
     ppu_off();
 
     pal_all(palette);
-    level_load(LEVEL_BANK, &lvl_forest);
-    enemies_load(forest_spawns);
-    spirits_load(forest_spirits);
-    traps_load(forest_traps);
+    mmc1_set_chr0(st->chr);
+    level_load(LEVEL_BANK, st->level);
+    enemies_load(st->enemies);
+    spirits_load(st->spirits);
+    traps_load(st->traps);
+    exit_x = st->exit_x ? st->exit_x : level_width - 24;
+
+    player_init(st->start_x, st->start_y);
+    player_hp = PLAYER_MAX_HP;
+    hud_set_player_hp(player_hp);
+    hud_set_enemy_hp(16);
 
     player_init(120, 160);
     scroll_y = 0;
-    level_draw(0);
+    camera_snap(player_x + PLAYER_WIDTH / 2);
     hud_init();
     oam_clear();
     hud_sprite0();
-    music_play(SONG_STAGE);
+    intro_begin();
     ppu_on();
-    ppu_mask |= 0x60; 
+    ppu_mask |= 0x60;
+    intro_play(st->song);
+}
+
+static void play_game(void) {
+    static u8 pad, pad_prev, pressed;
 
     for (;;) {
         pad = pad_poll(0);
@@ -60,13 +77,20 @@ static void play_game(void) {
             audio_silence();
             ppu_off();
             camera_snap(player_x + PLAYER_WIDTH / 2);
-            music_play(SONG_STAGE);
+            music_play(st->song);
             oam_clear();
             hud_sprite0();
             ppu_on();
             ppu_mask |= 0x60;
             continue;
         }
+        if (player_x + PLAYER_WIDTH / 2 >= exit_x) {
+            stage_clear();
+            if (++stage == stage_count) return;
+            start_stage();
+            pad_prev = 0xFF;
+            continue;
+        } 
         camera_update(player_x + PLAYER_WIDTH / 2);
 
         hud_set_player_hp(player_hp);

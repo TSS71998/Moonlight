@@ -331,7 +331,8 @@ _vram_buf_flush:
     .res 256
 
 .segment "CHARS"
-    .incbin "build/bg.chr"        ; CHR bank 0 (4 KB): background tiles (made by tools/bmp2level.c)
+    .incbin "build/bg.chr"        ;  CHR bank 0 (4 KB): the first level's background tiles (bmp2level.c)
     .incbin "chr/sprites.chr"   ; CHR bank 1 (4 KB): sprite tiles
     .incbin "chr/title.chr"     ; CHR bank 2 (4 KB): title screen tiles (title.c)
-    ; the remaining 20 KB (banks 3-7) is left empty for later graphics
+    .incbin "build/bg_more.chr"   ; CHR banks 3-7: the other levels' background tiles (bmp2level.c)
+    ; (the CHR segment is filled out to 32 KB: banks no level uses are empty)

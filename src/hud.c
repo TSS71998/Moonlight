@@ -39,6 +39,11 @@ static void __fastcall__ bar_tiles(u8 hp, u8 full) {
     for (i = 0; i < HUD_BAR_LEN; ++i) buf[i] = i < hp ? full : HUD_TILE_EMPTY;
 }
 
+void hud_new_game(void) {
+    static u8 i;
+    for (i = 0; i < 6; ++i) score[i] = 0;
+}
+
 void hud_init(void) {
     vram_adr(NTADR_A(0, 0));
     vram_fill(HUD_TILE_BLANK, HUD_ROWS * 32);
