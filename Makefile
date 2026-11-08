@@ -51,6 +51,7 @@ $(LVL)/stamp: $(LEVELS) $(wildcard levels/*_collision.bmp) $(wildcard levels/*.p
 	rm -rf $(LVL) && mkdir -p $(LVL)
 	$(BUILD)/bmp2level -font chr/bg.chr -chr $(BUILD)/bg.chr -chr-more $(BUILD)/bg_more.chr \
 		-h $(BUILD)/level_chr.h -o $(LVL) $(LEVELS)
+	touch $@
 
 $(BUILD)/bg.chr $(BUILD)/bg_more.chr $(BUILD)/level_chr.h: $(LVL)/stamp ;
 

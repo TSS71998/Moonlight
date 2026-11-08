@@ -45,7 +45,6 @@ static void start_stage(void) {
     hud_set_player_hp(player_hp);
     hud_set_enemy_hp(16);
 
-    player_init(120, 160);
     scroll_y = 0;
     camera_snap(player_x + PLAYER_WIDTH / 2);
     hud_init();
@@ -59,6 +58,11 @@ static void start_stage(void) {
 
 static void play_game(void) {
     static u8 pad, pad_prev, pressed;
+
+    hud_new_game();
+    stage = 0;
+    start_stage();
+    pad_prev = 0xFF;
 
     for (;;) {
         pad = pad_poll(0);
