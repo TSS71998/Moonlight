@@ -4,6 +4,8 @@
 #include "player.h"
 #include "hud.h"
 #include "enemy.h"
+#include "spirit.h"
+#include "trap.h"
 #include "title.h"
 #include "audio.h"
 
@@ -28,6 +30,8 @@ static void play_game(void) {
     pal_all(palette);
     level_load(LEVEL_BANK, &lvl_forest);
     enemies_load(forest_spawns);
+    spirits_load(forest_spirits);
+    traps_load(forest_traps);
 
     player_init(120, 160);
     scroll_y = 0;
@@ -46,9 +50,13 @@ static void play_game(void) {
 
         player_update(pad, pressed);
         enemies_update();
+        spirits_update();
+        traps_update();
         if (player_died) {
             player_died = 0;
             enemies_reset();
+            spirits_reset();
+            traps_reset();
             audio_silence();
             ppu_off();
             camera_snap(player_x + PLAYER_WIDTH / 2);
@@ -67,7 +75,9 @@ static void play_game(void) {
         oam_clear();
         hud_sprite0();
         player_draw();
+        traps_draw();
         enemies_draw();
+        spirits_draw();
 
         ppu_wait_nmi();
     }
