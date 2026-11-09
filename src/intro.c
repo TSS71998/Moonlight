@@ -17,9 +17,10 @@
 
 #define SKIP_BUTTONS (PAD_START | PAD_A)
 
-#define CLEAR_WALK        72
-#define CLEAR_FADE_DELAY  8
-#define CLEAR_BLACK       30
+#define CLEAR_TIME       48
+#define CLEAR_FADE_START 8
+#define CLEAR_FADE_DELAY 10
+#define CLEAR_BLACK      30
 
 extern u8 full_pal[32];
 
@@ -90,22 +91,26 @@ void __fastcall__ intro_play(u8 song) {
     }
 }
 
-void stage_clear(void) {
-    static u8 t, step, i;
+void __fastcall__ stage_clear(u8 walk) {
+    static u8 t, step, i, pad;
+    static u16 old_x;
 
     music_stop();
     sfx_play(SFX_CLEAR, SFX_WORLD);
     for (i = 0; i < 32; ++i) full_pal[i] = pal_buf[i];
 
+    pad = walk ? PAD_RIGHT : 0;
     step = FADE_STEPS;
-    for (t = 0; t < CLEAR_WALK; ++t) {
-        player_update(PAD_RIGHT, 0);
+    for (t = 0; t < CLEAR_TIME; ++t) {
+        old_x = player_x;
+        player_update(pad, 0);
+        if (player_x == old_x) pad = 0;
         player_died = 0;
-        camera_update(player_x + PLAYER_WIDTH / 2);
+        if (walk) camera_update(player_x + PLAYER_WIDTH / 2);
         hud_update();
 
-        if (t >= CLEAR_WALK - FADE_STEPS * CLEAR_FADE_DELAY
-            && (u8)(CLEAR_WALK - t) % CLEAR_FADE_DELAY == 0) {
+        if (step && t >= CLEAR_FADE_START
+            && (u8)(t - CLEAR_FADE_START) % CLEAR_FADE_DELAY == 0) {
             set_fade(step - 1, step - 1);
             --step;
         }

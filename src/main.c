@@ -8,6 +8,7 @@
 #include "trap.h"
 #include "intro.h"
 #include "stage.h"
+#include "boss.h"
 #include "title.h"
 #include "audio.h"
 
@@ -38,7 +39,8 @@ static void start_stage(void) {
     enemies_load(st->enemies);
     spirits_load(st->spirits);
     traps_load(st->traps);
-    exit_x = st->exit_x ? st->exit_x : level_width - 24;
+    exit_x = st->exit_x ? st->exit_x : level_width - 64;
+    boss_load(st->boss);
 
     player_init(st->start_x, st->start_y);
     player_hp = PLAYER_MAX_HP;
@@ -73,11 +75,17 @@ static void play_game(void) {
         enemies_update();
         spirits_update();
         traps_update();
+        if (st->boss) {
+            boss_update();
+            if (boss_phase == BP_FIGHT && player_x < boss_arena_x) player_x = boss_arena_x;
+        }
         if (player_died) {
             player_died = 0;
             enemies_reset();
             spirits_reset();
             traps_reset();
+            boss_load(st->boss);
+            hud_set_enemy_hp(16);
             audio_silence();
             ppu_off();
             camera_snap(player_x + PLAYER_WIDTH / 2);
@@ -88,14 +96,14 @@ static void play_game(void) {
             ppu_mask |= 0x60;
             continue;
         }
-        if (player_x + PLAYER_WIDTH / 2 >= exit_x) {
-            stage_clear();
+        if (st->boss ? boss_phase == BP_DONE : player_x + PLAYER_WIDTH / 2 >= exit_x) {
+            stage_clear(!st->boss);
             if (++stage == stage_count) return;
             start_stage();
             pad_prev = 0xFF;
             continue;
         } 
-        camera_update(player_x + PLAYER_WIDTH / 2);
+        camera_update(boss_phase == BP_FIGHT ? boss_arena_x + 128 : player_x + PLAYER_WIDTH / 2);
 
         hud_set_player_hp(player_hp);
         hud_update();
@@ -106,7 +114,7 @@ static void play_game(void) {
         traps_draw();
         enemies_draw();
         spirits_draw();
-
+        if (st->boss) boss_draw();
         ppu_wait_nmi();
     }
 }

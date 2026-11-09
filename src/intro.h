@@ -5,6 +5,6 @@
 
 void intro_begin(void);
 void __fastcall__ intro_play(u8 song);
-void stage_clear(void);
+void __fastcall__ stage_clear(u8 walk);
 
 #endif

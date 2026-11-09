@@ -5,6 +5,7 @@
 
 #define SONG_TITLE 0
 #define SONG_STAGE 1
+#define SONG_BOSS  2
 
 
 #define SFX_ENEMY_DIE 0

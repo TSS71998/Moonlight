@@ -6,6 +6,7 @@
 #include "enemy.h"
 #include "spirit.h"
 #include "trap.h"
+#include "boss.h"
 
 typedef struct {
     const LevelDef *level;
@@ -17,6 +18,7 @@ typedef struct {
     u16 start_x;
     u8 start_y;
     u16 exit_x;
+    u8 boss;
 } Stage;
 
 extern const Stage stages[];

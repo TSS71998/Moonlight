@@ -3,7 +3,7 @@
 
 #include "nes.h"
 
-#define MAX_TRAP_SPAWNS 32
+#define MAX_TRAP_SPAWNS 16
 
 typedef struct {
     u16 x;

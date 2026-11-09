@@ -3,7 +3,7 @@
 
 #include "nes.h"
 
-#define MAX_SPIRIT_SPAWNS 32
+#define MAX_SPIRIT_SPAWNS 16
 #define MAX_ITEMS         4
 
 #define ITEM_POINTS      0
