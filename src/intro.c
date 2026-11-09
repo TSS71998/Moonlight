@@ -20,7 +20,7 @@
 #define CLEAR_TIME       48
 #define CLEAR_FADE_START 8
 #define CLEAR_FADE_DELAY 10
-#define CLEAR_BLACK      30
+#define CLEAR_BLACK      100
 
 extern u8 full_pal[32];
 

@@ -70,4 +70,6 @@ void player_draw(void);
 
 void __fastcall__ player_hurt(u8 damage, u8 from_right);
 
+void player_respawn(void);
+
 #endif

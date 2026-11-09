@@ -197,9 +197,13 @@ static void move_vertical(void) {
 }
 
 static void player_die(void) {
-    player_hp = PLAYER_MAX_HP;
+    player_hp = 0;
     player_attack_hit = 0;
     player_died = 1;
+}
+
+void player_respawn(void) {
+    player_hp = PLAYER_MAX_HP;
     player_init(spawn_x, HI(spawn_y));
     player_invuln = INVULN_TIME;
 }

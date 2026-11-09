@@ -9,6 +9,7 @@
 #include "intro.h"
 #include "stage.h"
 #include "boss.h"
+#include "death.h"
 #include "title.h"
 #include "audio.h"
 
@@ -81,19 +82,23 @@ static void play_game(void) {
         }
         if (player_died) {
             player_died = 0;
+            death_screen();
+            player_respawn();
             enemies_reset();
             spirits_reset();
             traps_reset();
             boss_load(st->boss);
             hud_set_enemy_hp(16);
-            audio_silence();
-            ppu_off();
+            hud_set_player_hp(player_hp);
             camera_snap(player_x + PLAYER_WIDTH / 2);
-            music_play(st->song);
+            hud_init();
             oam_clear();
             hud_sprite0();
+            intro_begin();
             ppu_on();
             ppu_mask |= 0x60;
+            intro_play(st->song);
+            pad_prev = 0xFF;
             continue;
         }
         if (st->boss ? boss_phase == BP_DONE : player_x + PLAYER_WIDTH / 2 >= exit_x) {
