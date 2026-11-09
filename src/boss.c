@@ -39,6 +39,10 @@ static const u8 phantom2[] = { FRAME_32x32(0xE0) };
 #define WARN_TIME     30
 #define SWOOP_SPEED   4
 #define RISE_SPEED    2
+#define REST_TIME     60
+
+#define REST_FAST     40
+#define REST_HURTS    0
 #define DYING_TIME    96
 #define BOSS_POINTS   3000
 
@@ -48,9 +52,10 @@ static const u8 phantom2[] = { FRAME_32x32(0xE0) };
 #define B_HOVER   3
 #define B_WARN    4
 #define B_SWOOP   5
-#define B_RISE    6
-#define B_DYING   7
-#define B_GONE    8
+#define B_REST    6 
+#define B_RISE    7
+#define B_DYING   8
+#define B_GONE    9
 
 static u8 b_type, b_state, b_timer, b_hp, b_inv, b_left;
 static u16 b_x, b_y;
@@ -144,8 +149,9 @@ static void banked_update(void) {
         if (--b_timer == 0) {
             px = player_x + PLAYER_WIDTH / 2 - boss_arena_x;
             tx = px > 248 ? 248 : (u8)px;
-            ty = (u8)(player_y >> 8) + 28;
-            if (ty >> 224) ty = 224;
+            ty = (u8)(player_y >> 8) + 24;
+            while (ty < 232 && !level_solid_at(boss_arena_x + tx, ty)) ty += 4;
+            ty &= 0xF8;
             b_state = B_SWOOP;
             fly_to(SWOOP_SPEED);
             sfx_play(SFX_SWING, SFX_WORLD);
@@ -155,6 +161,14 @@ static void banked_update(void) {
     case B_SWOOP:
         b_x += b_vx;
         b_y += b_vy;
+        if (--b_timer == 0) {
+            b_y = (u16)ty << 8;             /* exactly on the ground */
+            b_state = B_REST;
+            b_timer = b_hp > BOSS_HP / 2 ? REST_TIME : REST_FAST;
+        }
+        break;
+
+    case B_REST:
         if (--b_timer == 0) {
             tx = BX < 128 ? RIGHT_X - 24 : LEFT_X + 24;
             ty = HOME_Y;
@@ -174,7 +188,7 @@ static void banked_update(void) {
 
     wx = boss_arena_x + BX;
     py = BY;
-    if (!player_invuln && player_state != PS_HURT
+    if (!player_invuln && player_state != PS_HURT && (REST_HURTS || b_state != B_REST)
         && player_x + HB_RIGHT >= wx - HALF_W && player_x + HB_LEFT <= wx + HALF_W - 1
         && (u8)(player_y >> 8) + HB_BOTTOM >= py - HEIGHT && (u8)(player_y >> 8) + HB_TOP < py) {
         player_hurt(BOSS_DAMAGE, wx > player_x + PLAYER_WIDTH / 2);
@@ -218,7 +232,7 @@ static void banked_draw(void) {
     if (b_state == B_WARN && (b_timer & 2)) ++sx;
     attr = BOSS_PAL;
     if (player_x + PLAYER_WIDTH / 2 > boss_arena_x + BX) attr |= SPR_FLIP_H;
-    oam_meta_spr(sx, y, (frame_count & 8) ? phantom2 : phantom1, attr);
+    oam_meta_spr(sx, y, (b_state == B_REST || (frame_count & 8)) ? phantom2 : phantom1, attr);
 }
 
 #pragma rodata-name(pop)
